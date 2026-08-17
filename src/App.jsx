@@ -1,14 +1,16 @@
-﻿import { useState } from "react";
-import Navbar from "./components/Navbar";
-import HeroCarousel from "./components/HeroCarousel";
-import ServiceTabs from "./components/ServiceTabs";
-import TechStack from "./components/TechStack";
-import FloatingCTA from "./components/FloatingCTA";
-import ContactModal from "./components/ContactModal";
+﻿import { useState } from 'react'
+import Navbar from './components/Navbar'
+import HeroCarousel from './components/HeroCarousel'
+import ServiceTabs from './components/ServiceTabs'
+import Projects from './components/Projects'
+import TechStack from './components/TechStack'
+import About from './components/About'
+import FloatingCTA from './components/FloatingCTA'
+import ContactModal from './components/ContactModal'
 
 export default function App() {
-  const [servicioActivo, setServicioActivo] = useState("dev");
-  const [modalAbierto, setModalAbierto] = useState(false);
+  const [servicioActivo, setServicioActivo] = useState('dev')
+  const [modalAbierto, setModalAbierto] = useState(false)
 
   return (
     <div
@@ -22,15 +24,16 @@ export default function App() {
           servicioActivo={servicioActivo}
           setServicioActivo={setServicioActivo}
         />
+        <Projects />
         <TechStack />
+        <About onOpenContact={() => setModalAbierto(true)} />
       </main>
       <FloatingCTA onOpenContact={() => setModalAbierto(true)} />
 
-      {/* Modal de Contacto Global */}
       <ContactModal
         isOpen={modalAbierto}
         onClose={() => setModalAbierto(false)}
       />
     </div>
-  );
+  )
 }

@@ -27,8 +27,10 @@ export default function Navbar({ onOpenContact }) {
           <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-300">
             <a href="#capacidades" className="hover:text-cyan-400 transition">Capacidades</a>
             <a href="#servicios" className="hover:text-cyan-400 transition">Servicios</a>
+            <a href="#proyectos" className="hover:text-cyan-400 transition">Proyectos</a>
             <a href="#stack" className="hover:text-cyan-400 transition">Tecnologías</a>
-            <button onClick={onOpenContact} className="hover:text-cyan-400 transition focus:outline-none">Contacto</button>
+            <a href="#sobre-mi" className="hover:text-cyan-400 transition">Sobre Mí</a>
+            <button onClick={onOpenContact} className="hover:text-cyan-400 transition focus:outline-none cursor-pointer">Contacto</button>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -45,7 +47,9 @@ export default function Navbar({ onOpenContact }) {
           <div className="lg:hidden mt-3 pt-3 border-t border-slate-800 flex flex-col gap-2 text-sm font-medium text-slate-300 bg-slate-900/95 p-3 rounded-2xl">
             <a href="#capacidades" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Capacidades</a>
             <a href="#servicios" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Servicios</a>
+            <a href="#proyectos" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Proyectos</a>
             <a href="#stack" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Tecnologías</a>
+            <a href="#sobre-mi" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Sobre Mí</a>
             <button onClick={() => { setMenuAbierto(false); onOpenContact(); }} className="text-left py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Contacto</button>
           </div>
         )}
