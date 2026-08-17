@@ -1,41 +1,39 @@
-﻿export default function About({ onOpenContact }) {
+﻿export default function About({ onOpenContact, onOpenCV }) {
   const competencias = [
     {
-      categoria: 'QA Automation & Funcional',
-      icono: '🧪',
-      habilidades: ['Playwright', 'Selenium', 'Karate DSL', 'Gherkin / BDD', 'Pruebas E2E & Regresión', 'Diseño de Test Cases']
+      categoria: 'QA Funcional & Manual',
+      icono: '📋',
+      habilidades: ['Diseño de Matrices & Test Cases', 'Pruebas E2E & Regresión', 'Smoke & Sanity Testing', 'UAT / Pruebas de Aceptación', 'Plataformas Web, Móvil & Siebel', 'Ciclo de Vida STLC']
     },
     {
-      categoria: 'Desarrollo Web Frontend',
-      icono: '💻',
-      habilidades: ['React 18', 'JavaScript Moderno', 'Tailwind CSS', 'Vite', 'HTML5 / CSS3 Semántico', 'Mobile-First Design']
+      categoria: 'Automatización & Innovación',
+      icono: '⚡',
+      habilidades: ['Orquestación con n8n', 'Automatización de Flujos', 'Testing con Playwright', 'Lógica de Automatización', 'Optimización de Regresiones', 'Scripts en Java / JS']
     },
     {
-      categoria: 'APIs & Integraciones',
+      categoria: 'APIs, Datos & Backend',
       icono: '🔌',
-      habilidades: ['Testing de APIs REST', 'Postman Collections', 'Automatización con n8n', 'Validación de JSON Payloads', 'Consultas SQL']
+      habilidades: ['Pruebas de API REST (Postman)', 'Validación de JSON Payloads', 'Consultas SQL Avanzadas', 'Integridad y Normalización', 'Verificación de Bases de Datos']
     },
     {
-      categoria: 'Gestión, CI/CD & Herramientas',
-      icono: '⚙️',
-      habilidades: ['Git & GitHub', 'Jira Software & XRay', 'GitHub Actions (CI/CD)', 'Scrum / Agile', 'Documentación Técnica']
+      categoria: 'Gestión, Agile & Desarrollo',
+      icono: '🛠️',
+      habilidades: ['Jira Software & XRay', 'Git & GitHub', 'Metodologías Ágiles (Scrum)', 'Desarrollo Web (React, HTML5, CSS3)', 'Reporte y Trazabilidad de Bugs']
     }
   ];
 
   return (
     <section id="sobre-mi" className="max-w-6xl mx-auto px-4 py-16 w-full">
       <div className="bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-        {/* Efecto de luz ambiental */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="relative z-10 space-y-10">
           
-          {/* Encabezado y Resumen Profesional */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-8 space-y-4">
               <div className="inline-flex items-center gap-2 bg-emerald-950/80 border border-emerald-500/40 px-3 py-1 rounded-full text-xs font-semibold text-emerald-300">
-                <span>👨‍💻 Perfil Profesional & Resumen</span>
+                <span>👨‍💻 Perfil Profesional & Trayectoria</span>
               </div>
 
               <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -43,36 +41,35 @@
               </h2>
               
               <p className="text-sm sm:text-base text-cyan-400 font-medium">
-                QA Test Engineer & Frontend Developer
+                Ingeniero de Pruebas QA Funcional & Automatización de Procesos
               </p>
 
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Especialista técnico con experiencia en el ciclo de vida completo del desarrollo y aseguramiento de calidad de software (QA). Combino la construcción de interfaces web intuitivas y responsivas en <strong className="text-white">React y Tailwind CSS</strong> con el diseño riguroso de planes de prueba, análisis funcional y automatización de pruebas de extremo a extremo (<strong className="text-white">Playwright, APIs REST y n8n</strong>).
+                Ingeniero de Pruebas QA con sólida experiencia práctica en <strong className="text-white">pruebas manuales, análisis funcional y gestión integral del ciclo de pruebas (STLC)</strong> en plataformas empresariales core (Siebel, banca y plataformas web/móviles). Experto en diseñar matrices exhaustivas, validar reglas de negocio de punta a punta y certificar la estabilidad de cada entrega.
               </p>
 
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Mi enfoque está centrado en prevenir defectos de forma temprana (<em>Shift-Left Testing</em>), garantizar estabilidad funcional, validar flujos críticos de negocio y optimizar la experiencia de usuario final en múltiples resoluciones y plataformas.
+                Complemento mi enfoque funcional incorporando activamente la <strong className="text-white">automatización de flujos y procesos (n8n, lógica de automatización y Playwright)</strong>, validación de APIs REST con Postman y verificación de bases de datos con SQL, respaldado por una base sólida en desarrollo web e integración técnica con equipos ágiles.
               </p>
             </div>
 
-            {/* Tarjeta de Métricas y CTA */}
             <div className="lg:col-span-4 bg-slate-950/80 border border-slate-800/90 rounded-2xl p-5 flex flex-col gap-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 text-center">
-                Pilares de Trabajo
+                Especialidades Clave
               </h3>
 
               <div className="space-y-2.5 text-xs">
                 <div className="flex items-center justify-between p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
-                  <span className="text-slate-300">🎯 Calidad & Estabilidad</span>
-                  <span className="font-bold text-emerald-400">Sin Regresiones</span>
+                  <span className="text-slate-300">📋 QA Funcional & Manual</span>
+                  <span className="font-bold text-emerald-400">Matrices & E2E</span>
                 </div>
                 <div className="flex items-center justify-between p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
-                  <span className="text-slate-300">⚡ Automatización E2E</span>
-                  <span className="font-bold text-cyan-400">Playwright / API</span>
+                  <span className="text-slate-300">⚡ Automatización</span>
+                  <span className="font-bold text-cyan-400">n8n / Playwright</span>
                 </div>
                 <div className="flex items-center justify-between p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
-                  <span className="text-slate-300">📱 Interfaz Moderna</span>
-                  <span className="font-bold text-purple-400">100% Adaptable</span>
+                  <span className="text-slate-300">🔌 Backend & APIs</span>
+                  <span className="font-bold text-purple-400">Postman / SQL</span>
                 </div>
               </div>
 
@@ -82,24 +79,23 @@
                   className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md shadow-cyan-950/40 transition transform active:scale-95 cursor-pointer"
                 >
                   <span>🚀</span>
-                  <span>Iniciar Proyecto / Contactar</span>
+                  <span>Iniciar Conversación / Contactar</span>
                 </button>
                 <button
-                  onClick={onOpenContact}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl border border-slate-700 transition cursor-pointer"
+                  onClick={onOpenCV}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-cyan-300 text-xs font-semibold py-2.5 px-4 rounded-xl border border-cyan-500/30 hover:border-cyan-400 transition cursor-pointer"
                 >
                   <span>📄</span>
-                  <span>Solicitar CV en PDF</span>
+                  <span>Descargar CV Ejecutivo (ES / EN)</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Cuadrícula de Perfil Técnico */}
           <div className="pt-4 border-t border-slate-800">
             <h3 className="text-base sm:text-lg font-bold text-white mb-6 flex items-center gap-2">
               <span>🛠️</span>
-              <span>Habilidades y Tecnologías Clave</span>
+              <span>Matriz de Competencias Técnicas</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
