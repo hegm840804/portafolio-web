@@ -7,17 +7,19 @@ import TechStack from './components/TechStack'
 import About from './components/About'
 import FloatingCTA from './components/FloatingCTA'
 import ContactModal from './components/ContactModal'
+import CVDownloadModal from './components/CVDownloadModal'
 
 export default function App() {
   const [servicioActivo, setServicioActivo] = useState('dev')
-  const [modalAbierto, setModalAbierto] = useState(false)
+  const [modalContactoAbierto, setModalContactoAbierto] = useState(false)
+  const [modalCVAbierto, setModalCVAbierto] = useState(false)
 
   return (
     <div
       translate="no"
       className="notranslate min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-slate-100 flex flex-col font-sans pb-24 selection:bg-cyan-500 selection:text-white"
     >
-      <Navbar onOpenContact={() => setModalAbierto(true)} />
+      <Navbar onOpenContact={() => setModalContactoAbierto(true)} />
       <main className="flex-1">
         <HeroCarousel />
         <ServiceTabs
@@ -26,13 +28,23 @@ export default function App() {
         />
         <Projects />
         <TechStack />
-        <About onOpenContact={() => setModalAbierto(true)} />
+        <About 
+          onOpenContact={() => setModalContactoAbierto(true)} 
+          onOpenCV={() => setModalCVAbierto(true)} 
+        />
       </main>
-      <FloatingCTA onOpenContact={() => setModalAbierto(true)} />
+      <FloatingCTA onOpenContact={() => setModalContactoAbierto(true)} />
 
+      {/* Modal de Contacto */}
       <ContactModal
-        isOpen={modalAbierto}
-        onClose={() => setModalAbierto(false)}
+        isOpen={modalContactoAbierto}
+        onClose={() => setModalContactoAbierto(false)}
+      />
+
+      {/* Modal de Selección y Descarga de CV */}
+      <CVDownloadModal
+        isOpen={modalCVAbierto}
+        onClose={() => setModalCVAbierto(false)}
       />
     </div>
   )
