@@ -13,7 +13,7 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [procesandoPaso, setProcesandoPaso] = useState(false);
 
   // ARCHIVO 1: REQUERIMIENTOS
-  const [modoEntradaReq, setModoEntradaReq] = useState('ejemplos');
+  const [modoEntradaReq, setModoEntradaReq] = useState('subir');
   const [archivoReqNombre, setArchivoReqNombre] = useState(null);
   const [vistaPreviaReqImg, setVistaPreviaReqImg] = useState(null);
   const [textoLibreReq, setTextoLibreReq] = useState('');
@@ -52,6 +52,47 @@ export default function QASuiteStudio({ onOpenContact }) {
 
   const [nuevaColumna, setNuevaColumna] = useState('');
 
+  // MANEJO DE CARGA DE ARCHIVO 1 (REQUERIMIENTO)
+  const manejarSubidaReq = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setArchivoReqNombre(file.name);
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => setVistaPreviaReqImg(ev.target.result);
+        reader.readAsDataURL(file);
+      } else {
+        setVistaPreviaReqImg(null);
+      }
+      setRequerimiento({
+        idHU: 'DOC-' + file.name.slice(0, 8).toUpperCase(),
+        titulo: 'Requerimiento: ' + file.name,
+        descripcion: `Especificación cargada desde ${file.name} (${(file.size / 1024).toFixed(1)} KB). Analizando flujos transaccionales.`,
+        origen: 'Archivo local (' + file.name + ')',
+        criterios: [
+          'Validación de campos obligatorios y reglas de entrada.',
+          'Verificación de flujos alternos y excepciones en transacciones.',
+          'Comprobación de tiempos de respuesta y consistencia en BD.'
+        ]
+      });
+    }
+  };
+
+  // MANEJO DE CARGA DE ARCHIVO 2 (PLANTILLA / FORMATO)
+  const manejarSubidaFormato = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setArchivoFormatoNombre(file.name);
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => setVistaPreviaFormatoImg(ev.target.result);
+        reader.readAsDataURL(file);
+      } else {
+        setVistaPreviaFormatoImg(null);
+      }
+    }
+  };
+
   // GENERADOR DE 50+ CASOS MASIVOS
   const generarSuiteCompleta = (cantidad) => {
     const areas = ['HP', 'TTF', 'Smoke', 'Concurrencia', 'Seguridad', 'Resiliencia', 'Auditoria'];
@@ -63,21 +104,20 @@ export default function QASuiteStudio({ onOpenContact }) {
         tipo: `Validación ${area} #${i}`,
         categoriaMetrica: area,
         pasosArray: [
-          { num: 1, accion: `Configurar el ambiente y datos iniciales para el escenario ${area} #${i}.`, data: `Param_${i}=Activo | Auth=JWT_Valid`, esperado: 'El sistema inicializa el contexto de prueba sin errores.' },
-          { num: 2, accion: `Ejecutar la transacción principal o vector de prueba para ${area} #${i}.`, data: `Payload_ID: ${i} | Input_Val: OK`, esperado: 'Respuesta conforme a las reglas de negocio del requerimiento.' },
-          { num: 3, accion: 'Verificar la persistencia y trazabilidad de los datos en base de datos.', data: `Query: SELECT * FROM audit WHERE id = ${i}`, esperado: 'Registros inmutables guardados correctamente y logs de auditoría generados.' }
+          { num: 1, accion: `Configurar ambiente para escenario ${area} #${i}.`, data: `Param_${i}=Activo`, esperado: 'Contexto inicializado.' },
+          { num: 2, accion: `Ejecutar transacción de prueba para ${area} #${i}.`, data: `Payload_ID: ${i}`, esperado: 'Respuesta conforme a requerimiento.' },
+          { num: 3, accion: 'Verificar persistencia en base de datos.', data: `Query: SELECT * FROM audit WHERE id = ${i}`, esperado: 'Registros inmutables guardados.' }
         ],
         valores: {
           'ID_Caso': `TC-${area.toUpperCase()}-${i}`,
           'Modulo_Core': `SPEI / Módulo ${area}`,
           'Requerimiento_Asociado': requerimiento.idHU,
-          'Descripcion_Escenario': `Prueba técnica avanzada #${i} enfocada en ${area} para garantizar la resiliencia y calidad del software.`,
+          'Descripcion_Escenario': `Prueba técnica avanzada #${i} enfocada en ${area} para garantizar la calidad del software.`,
           'Tipo_Validacion': `Validación Senior (${area})`,
-          'Precondiciones': `Ambiente configurado, token de sesión activo y servicios core en línea para caso ${i}.`,
-          'Pasos_Detallados': `1. Inicializar contexto ${i}.\n2. Enviar petición.\n3. Validar respuesta HTTP y BD.`,
-          'Valores_Entrada_TestData': `Dataset_ID: ${i} | Input_Param: Test_${i}`,
-          'Comportamiento_Esperado': `El sistema responde con código HTTP 200 y cumple estrictamente con el criterio de aceptación ${i}.`,
-          'Postcondiciones_Persistencia': `Persistencia SQL validada en tablas relacionales para caso ${i}.`,
+          'Precondiciones': `Ambiente configurado y servicios en línea para caso ${i}.`,
+          'Pasos_Detallados': `1. Inicializar contexto ${i}.\n2. Enviar petición.\n3. Validar BD.`,
+          'Valores_Entrada_TestData': `Dataset_ID: ${i}`,
+          'Comportamiento_Esperado': `El sistema responde con HTTP 200 y cumple el criterio ${i}.`,
           'Severidad': i <= 10 ? 'Crítica' : 'Alta',
           'Estado': 'Listo para Ejecución'
         }
@@ -92,7 +132,7 @@ export default function QASuiteStudio({ onOpenContact }) {
   const inicio = (pagina - 1) * casosPorPagina;
   const casosVisibles = suiteCompleta.slice(inicio, inicio + casosPorPagina);
 
-  // ESTADOS DEL TEST RUNNER PASO A PASO
+  // TEST RUNNER PASO A PASO
   const [ejecutorActivo, setEjecutorActivo] = useState(false);
   const [casoEnEjecucion, setCasoEnEjecucion] = useState(null);
   const [pasoActualIdx, setPasoActualIdx] = useState(0);
@@ -493,7 +533,7 @@ export default function QASuiteStudio({ onOpenContact }) {
               </button>
             </div>
 
-            {/* FASE 1 */}
+            {/* FASE 1: SUBIR REQUERIMIENTO (CON LECTOR REAL DE ARCHIVOS) */}
             {pasoMP === 1 && (
               <div className="space-y-5 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
@@ -501,15 +541,48 @@ export default function QASuiteStudio({ onOpenContact }) {
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
                       Archivo 1: Ingreso de Requerimiento (Doc / Imagen / Texto)
                     </span>
-                    <p className="text-[11px] text-slate-400">Provee la especificación de lo que deseas probar.</p>
+                    <p className="text-[11px] text-slate-400">Sube la especificación o historia de usuario que deseas probar.</p>
                   </div>
                 </div>
 
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
-                  <label className="block text-slate-300 font-bold mb-1">Caso de Uso Bancario / FinTech Preconfigurado:</label>
-                  <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-emerald-300 font-semibold">
-                    🏦 Módulo SPEI / Transferencias Bancarias en Tiempo Real (FinTech & Banca Core)
+                <div className="bg-slate-950 border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-2xl p-6 text-center space-y-3 transition">
+                  <div className="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl mx-auto">
+                    📄
                   </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {archivoReqNombre ? ('Archivo Cargado: ' + archivoReqNombre) : 'Arrastra o selecciona el archivo del requerimiento'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Soporta: Imágenes (.png, .jpg), Documentos (.pdf, .docx), Excel (.xlsx) o Texto (.txt)
+                    </p>
+                  </div>
+
+                  {vistaPreviaReqImg && (
+                    <div className="max-w-xs mx-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
+                      <img src={vistaPreviaReqImg} alt="Preview Requerimiento" className="rounded-lg max-h-36 mx-auto object-cover" />
+                      <span className="text-[10px] text-emerald-400 block mt-1">✓ Imagen de requerimiento cargada</span>
+                    </div>
+                  )}
+
+                  <label className="inline-block bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-300 font-semibold px-4 py-2 rounded-xl transition cursor-pointer">
+                    Seleccionar Archivo de Requerimiento
+                    <input
+                      type="file"
+                      accept=".png,.jpg,.jpeg,.pdf,.docx,.doc,.xlsx,.xls,.txt"
+                      onChange={manejarSubidaReq}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-2">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span className="font-bold text-white text-xs">{requerimiento.titulo}</span>
+                    <span className="font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800 text-[11px]">{requerimiento.idHU}</span>
+                  </div>
+                  <p className="text-slate-300"><strong className="text-slate-400">Origen:</strong> {requerimiento.origen}</p>
+                  <p className="text-slate-300"><strong className="text-slate-400">Descripción:</strong> {requerimiento.descripcion}</p>
                 </div>
 
                 <div className="flex justify-end pt-2">
@@ -517,14 +590,14 @@ export default function QASuiteStudio({ onOpenContact }) {
                     onClick={() => setPasoMP(2)}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
                   >
-                    <span>Siguiente: Analizar Mi Formato de Casos (Archivo 2)</span>
+                    <span>Siguiente: Subir Formato de Matriz (Archivo 2)</span>
                     <span>➔</span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* FASE 2 */}
+            {/* FASE 2: SUBIR PLANTILLA / FORMATO (CON LECTOR REAL DE ARCHIVOS) */}
             {pasoMP === 2 && (
               <div className="space-y-5 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
@@ -536,6 +609,37 @@ export default function QASuiteStudio({ onOpenContact }) {
                       Sube tu plantilla y el motor mapeará automáticamente las columnas.
                     </p>
                   </div>
+                </div>
+
+                <div className="bg-slate-950 border-2 border-dashed border-cyan-700/60 hover:border-cyan-400 rounded-2xl p-6 text-center space-y-3 transition">
+                  <div className="h-12 w-12 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl mx-auto">
+                    📊
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {archivoFormatoNombre ? ('Plantilla Cargada: ' + archivoFormatoNombre) : 'Arrastra una captura de tu Excel, documento o plantilla de casos'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Soporta: Capturas (.png, .jpg), Archivos Excel (.xlsx, .csv), Word (.docx) o Texto
+                    </p>
+                  </div>
+
+                  {vistaPreviaFormatoImg && (
+                    <div className="max-w-xs mx-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
+                      <img src={vistaPreviaFormatoImg} alt="Preview Formato" className="rounded-lg max-h-36 mx-auto object-cover" />
+                      <span className="text-[10px] text-cyan-400 block mt-1">✓ Captura de formato escaneada</span>
+                    </div>
+                  )}
+
+                  <label className="inline-block bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 font-semibold px-4 py-2 rounded-xl transition cursor-pointer">
+                    Seleccionar Archivo de Formato
+                    <input
+                      type="file"
+                      accept=".png,.jpg,.jpeg,.xlsx,.xls,.csv,.docx,.doc,.txt"
+                      onChange={manejarSubidaFormato}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
 
                 <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
@@ -572,7 +676,7 @@ export default function QASuiteStudio({ onOpenContact }) {
               </div>
             )}
 
-            {/* FASE 3 */}
+            {/* FASE 3: SUITE QA CON 50+ CASOS */}
             {pasoMP === 3 && (
               <div className="space-y-5">
                 
@@ -677,9 +781,7 @@ export default function QASuiteStudio({ onOpenContact }) {
           </div>
         )}
 
-        {/* ========================================================================= */}
         {/* PESTAÑA 2: ORQUESTADOR N8N */}
-        {/* ========================================================================= */}
         {pestanaActiva === 'n8n' && (
           <div className="space-y-6">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-8">
@@ -737,7 +839,7 @@ export default function QASuiteStudio({ onOpenContact }) {
 
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <label className="text-slate-400 font-semibold">Cuerpo JSON (Editable):</label>
+                      <label className="block text-slate-400 font-semibold">Cuerpo JSON (Editable):</label>
                       <span className="text-[10px] text-slate-500 font-mono">application/json</span>
                     </div>
                     <textarea
