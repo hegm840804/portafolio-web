@@ -4,13 +4,10 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [pestanaActiva, setPestanaActiva] = useState('matriz'); // 'matriz' | 'n8n'
 
   // =========================================================================
-  // 1. GENERADOR DE MATRIZ CON FLUJO DE 3 PASOS Y 50+ CASOS TRAZABLES
+  // 1. GENERADOR DE MATRIZ CON FLUJO DE 3 PASOS Y SELECTOR DE NIVEL (JR, MED, SR)
   // =========================================================================
   const [pasoMP, setPasoMP] = useState(1);
-  const [alertaSeguridad, setAlertaSeguridad] = useState(false);
-  const [modalCotizador, setModalCotizador] = useState(false);
-  const [cotizacionEnviada, setCotizacionEnviada] = useState(false);
-  const [procesandoPaso, setProcesandoPaso] = useState(false);
+  const [nivelSeleccionado, setNivelSeleccionado] = useState('senior'); // 'junior' | 'semi' | 'senior'
 
   // ARCHIVO 1: REQUERIMIENTOS
   const [archivoReqNombre, setArchivoReqNombre] = useState(null);
@@ -47,7 +44,7 @@ export default function QASuiteStudio({ onOpenContact }) {
     'Estado'
   ]);
 
-  // MANEJO DE CARGA DE ARCHIVO 1 (REQUERIMIENTO CON EXTRACCIÓN DE PREFIJO)
+  // MANEJO DE CARGA DE ARCHIVO 1
   const manejarSubidaReq = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -92,23 +89,28 @@ export default function QASuiteStudio({ onOpenContact }) {
     }
   };
 
-  // GENERADOR MASIVO DINÁMICO (MÍNIMO 50 CASOS CON ID BASADO EN EL REQUERIMIENTO)
-  const generarSuiteConPrefijo = (prefijo, cantidad) => {
+  // GENERADOR DINÁMICO SEGÚN NIVEL (JR: 30 casos | MED: 75 casos | SR: 120 casos)
+  const generarSuitePorNivel = (prefijo, nivel) => {
+    let totalCasos = 30;
+    if (nivel === 'semi') totalCasos = 75;
+    if (nivel === 'senior') totalCasos = 120;
+
     const areas = [
-      { code: 'HP', name: 'Happy Path', count: 10 },
-      { code: 'TTF', name: 'Test to Fail / Frontera', count: 10 },
-      { code: 'SMK', name: 'Smoke Test', count: 8 },
-      { code: 'CON', name: 'Concurrencia', count: 8 },
-      { code: 'SEC', name: 'Seguridad (XSS/SQLi)', count: 8 },
-      { code: 'RES', name: 'Resiliencia / Rollback', count: 8 },
-      { code: 'SQL', name: 'Auditoría SQL', count: 8 }
-    ]; // Total = 62 casos estructurados
+      { code: 'HP', name: 'Happy Path' },
+      { code: 'TTF', name: 'Test to Fail / Frontera' },
+      { code: 'SMK', name: 'Smoke Test' },
+      { code: 'CON', name: 'Concurrencia' },
+      { code: 'SEC', name: 'Seguridad (XSS/SQLi)' },
+      { code: 'RES', name: 'Resiliencia / Rollback' },
+      { code: 'SQL', name: 'Auditoría SQL' }
+    ];
 
     let suite = [];
-    let contadorGlobal = 1;
+    let casosPorArea = Math.ceil(totalCasos / areas.length);
 
-    areas.forEach(seccion => {
-      for (let i = 1; i <= seccion.count; i++) {
+    areas.forEach((seccion, sIdx) => {
+      const limite = (sIdx === areas.length - 1) ? (totalCasos - suite.length) : casosPorArea;
+      for (let i = 1; i <= limite; i++) {
         const idCaso = `TC-${prefijo}-${seccion.code}-${String(i).padStart(2, '0')}`;
         suite.push({
           id: idCaso,
@@ -116,7 +118,7 @@ export default function QASuiteStudio({ onOpenContact }) {
           categoriaMetrica: seccion.code,
           seccionNombre: seccion.name,
           pasosArray: [
-            { num: 1, accion: `Configurar entorno para prueba ${seccion.name} #${i} bajo requerimiento ${requerimiento.idHU}.`, data: `Input_Ref=${prefijo}_${i}`, esperado: 'Entorno listo para validación.' },
+            { num: 1, accion: `Configurar entorno para prueba ${seccion.name} #${i} bajo requerimiento ${requerimiento.idHU}.`, data: `Param_${i}=Activo | Auth=JWT_Valid`, esperado: 'Entorno listo para validación.' },
             { num: 2, accion: `Ejecutar validación de ${seccion.name.toLowerCase()} en el módulo de negocio.`, data: `Vector_Test=${seccion.code}_${i}`, esperado: 'Respuesta conforme a especificación técnica.' },
             { num: 3, accion: 'Verificar registros de auditoría y persistencia en base de datos.', data: `Query: SELECT * FROM logs WHERE ref = '${idCaso}'`, esperado: 'Persistencia inmutable verificada.' }
           ],
@@ -124,23 +126,22 @@ export default function QASuiteStudio({ onOpenContact }) {
             'ID_Caso': idCaso,
             'Modulo_Core': `${prefijo} / Módulo ${seccion.name}`,
             'Requerimiento_Asociado': requerimiento.idHU,
-            'Descripcion_Escenario': `Validación experta (${seccion.name}) #${i} basada en la especificación del requerimiento ${requerimiento.idHU}.`,
-            'Tipo_Validacion': `QA Senior - ${seccion.name}`,
+            'Descripcion_Escenario': `Validación (${seccion.name}) #${i} basada en la especificación del requerimiento ${requerimiento.idHU}.`,
+            'Tipo_Validacion': `QA ${nivel.toUpperCase()} - ${seccion.name}`,
             'Precondiciones': `Servicios core activos y parámetros cargados para ${idCaso}.`,
             'Pasos_Detallados': `1. Configurar datos ${i}.\n2. Ejecutar transacción.\n3. Validar BD.`,
             'Valores_Entrada_TestData': `Dataset_${seccion.code}_${i}`,
             'Comportamiento_Esperado': `El sistema cumple con la regla de aceptación para ${seccion.name}.`,
-            'Severidad': i <= 3 ? 'Crítica' : 'Alta',
+            'Severidad': i <= 2 ? 'Crítica' : 'Alta',
             'Estado': 'Listo para Ejecución'
           }
         });
-        contadorGlobal++;
       }
     });
     return suite;
   };
 
-  const suiteCompleta = generarSuiteConPrefijo(requerimiento.prefijoID, 60);
+  const suiteCompleta = generarSuitePorNivel(requerimiento.prefijoID, nivelSeleccionado);
 
   // DESGLOSE POR SECCIÓN PARA LA TABLITA DE MÉTRICAS
   const resumenSecciones = [
@@ -212,7 +213,7 @@ export default function QASuiteStudio({ onOpenContact }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Suite_QA_${requerimiento.prefijoID}_${suiteCompleta.length}_Casos.csv`;
+    link.download = `Suite_QA_${requerimiento.prefijoID}_${nivelSeleccionado.toUpperCase()}_${suiteCompleta.length}_Casos.csv`;
     link.click();
     setModalCotizador(true);
   };
@@ -493,7 +494,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             )}
           >
             <span>📋</span>
-            <span>1. Generador de Matriz QA (Flujo 3 Pasos - {suiteCompleta.length} Casos)</span>
+            <span>1. Generador de Matriz QA ({suiteCompleta.length} Casos Trazables)</span>
           </button>
 
           <button
@@ -553,9 +554,9 @@ export default function QASuiteStudio({ onOpenContact }) {
               >
                 <div className="flex items-center gap-2">
                   <span className="h-6 w-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-mono text-xs font-bold">3</span>
-                  <span className="text-xs font-bold">Archivo 3: Suite QA ({suiteCompleta.length} Casos)</span>
+                  <span className="text-xs font-bold">Archivo 3: Suite QA & Métricas</span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">Ejecución interactiva & CSV UTF-8</p>
+                <p className="text-[11px] text-slate-400 mt-1">Niveles Jr, Med, Sr & CSV UTF-8</p>
               </button>
             </div>
 
@@ -702,16 +703,72 @@ export default function QASuiteStudio({ onOpenContact }) {
               </div>
             )}
 
-            {/* FASE 3: SUITE QA CON TABLITA DE RESUMEN Y 50+ CASOS */}
+            {/* FASE 3: SUITE QA CON PANEL DE NIVELES (JR, MED, SR) Y TABLITA DE RESUMEN */}
             {pasoMP === 3 && (
               <div className="space-y-6">
                 
-                {/* TABLITA DE RESUMEN DE NÚMERO DE CASOS POR SECCIÓN */}
+                {/* NUEVO APARTADO: SELECTOR DE PERFIL QA (JR, MED, SR) */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-3">
+                    <div>
+                      <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">
+                        ⚙️ Selector de Nivel de Cobertura QA
+                      </span>
+                      <p className="text-[11px] text-slate-400">
+                        Selecciona el perfil de profundidad para ajustar la cantidad de casos generados:
+                      </p>
+                    </div>
+
+                    <div className="inline-flex p-1 bg-slate-900 border border-slate-800 rounded-xl">
+                      <button
+                        onClick={() => { setNivelSeleccionado('junior'); setPagina(1); }}
+                        className={'px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ' + (
+                          nivelSeleccionado === 'junior' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                        )}
+                      >
+                        🌱 Jr (30 Casos)
+                      </button>
+                      <button
+                        onClick={() => { setNivelSeleccionado('semi'); setPagina(1); }}
+                        className={'px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ' + (
+                          nivelSeleccionado === 'semi' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                        )}
+                      >
+                        ⚡ Med (75 Casos)
+                      </button>
+                      <button
+                        onClick={() => { setNivelSeleccionado('senior'); setPagina(1); }}
+                        className={'px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ' + (
+                          nivelSeleccionado === 'senior' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                        )}
+                      >
+                        🚀 Sr (120 Casos)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className={'p-3 rounded-xl border transition ' + (nivelSeleccionado === 'junior' ? 'bg-cyan-950/40 border-cyan-500' : 'bg-slate-900 border-slate-800 text-slate-400')}>
+                      <p className="font-bold text-white">🌱 Junior (Jr)</p>
+                      <p className="text-[11px] mt-1">Métrica: ~30 casos. Enfoque en Happy Path y validaciones funcionales esenciales.</p>
+                    </div>
+                    <div className={'p-3 rounded-xl border transition ' + (nivelSeleccionado === 'semi' ? 'bg-amber-950/40 border-amber-500' : 'bg-slate-900 border-slate-800 text-slate-400')}>
+                      <p className="font-bold text-white">⚡ Semi-Senior (Med)</p>
+                      <p className="text-[11px] mt-1">Métrica: ~75 casos. Cobertura robusta de fronteras, smoke y flujos alternos.</p>
+                    </div>
+                    <div className={'p-3 rounded-xl border transition ' + (nivelSeleccionado === 'senior' ? 'bg-emerald-950/40 border-emerald-500' : 'bg-slate-900 border-slate-800 text-slate-400')}>
+                      <p className="font-bold text-white">🚀 Senior / Lead (Sr)</p>
+                      <p className="text-[11px] mt-1">Métrica: 120+ casos. Suite exhaustiva con Seguridad, Resiliencia y Auditoría SQL.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TABLITA DE RESUMEN DE COBERTURA & DISTRIBUCIÓN POR SECCIÓN */}
                 <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-3">
                     <div>
                       <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
-                        📊 Resumen de Cobertura & Distribución por Sección
+                        📊 RESUMEN DE COBERTURA & DISTRIBUCIÓN POR SECCIÓN
                       </span>
                       <p className="text-[11px] text-slate-400">
                         Total de casos generados para el requerimiento <strong className="text-white">{requerimiento.idHU}</strong> con prefijo <strong className="text-cyan-400">[{requerimiento.prefijoID}]</strong>:
