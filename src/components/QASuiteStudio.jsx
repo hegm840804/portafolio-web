@@ -4,7 +4,7 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [pestanaActiva, setPestanaActiva] = useState('matriz'); // 'matriz' | 'n8n'
 
   // =========================================================================
-  // 1. GENERADOR DE MATRIZ CON FLUJO DE 3 PASOS Y 50+ CASOS SENIOR
+  // 1. GENERADOR DE MATRIZ CON FLUJO DE 3 PASOS Y 50+ CASOS TRAZABLES
   // =========================================================================
   const [pasoMP, setPasoMP] = useState(1);
   const [alertaSeguridad, setAlertaSeguridad] = useState(false);
@@ -13,26 +13,23 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [procesandoPaso, setProcesandoPaso] = useState(false);
 
   // ARCHIVO 1: REQUERIMIENTOS
-  const [modoEntradaReq, setModoEntradaReq] = useState('subir');
   const [archivoReqNombre, setArchivoReqNombre] = useState(null);
   const [vistaPreviaReqImg, setVistaPreviaReqImg] = useState(null);
-  const [textoLibreReq, setTextoLibreReq] = useState('');
 
   const [requerimiento, setRequerimiento] = useState({
     idHU: 'HU-SPEI-104',
+    prefijoID: 'SPEI',
     titulo: 'Módulo de Transferencias Interbancarias SPEI en Tiempo Real',
     descripcion: 'Como cuentahabiente, deseo transferir fondos a cuentas CLABE de otros bancos para realizar pagos inmediatos de forma segura.',
     origen: 'Especificación Core Bancario / FinTech',
     criterios: [
       'La cuenta CLABE debe contener exactamente 18 dígitos numéricos válidos bajo algoritmo Módulo 10 Banxico.',
       'El monto a transferir debe ser mayor a $0.00 y menor o igual al saldo líquido disponible.',
-      'Toda transacción aprobada debe generar un folio de rastreo CEP único y persistir en base de datos.',
-      'Si el servicio bancario tarda más de 10 segundos, aplicar rollback automático sin afectación al saldo.'
+      'Toda transacción aprobada debe generar un folio de rastreo CEP único y persistir en base de datos.'
     ]
   });
 
   // ARCHIVO 2: PLANTILLA / ESTRUCTURA DE MATRIZ
-  const [modoEntradaFormato, setModoEntradaFormato] = useState('subir');
   const [archivoFormatoNombre, setArchivoFormatoNombre] = useState(null);
   const [vistaPreviaFormatoImg, setVistaPreviaFormatoImg] = useState(null);
 
@@ -50,9 +47,7 @@ export default function QASuiteStudio({ onOpenContact }) {
     'Estado'
   ]);
 
-  const [nuevaColumna, setNuevaColumna] = useState('');
-
-  // MANEJO DE CARGA DE ARCHIVO 1 (REQUERIMIENTO)
+  // MANEJO DE CARGA DE ARCHIVO 1 (REQUERIMIENTO CON EXTRACCIÓN DE PREFIJO)
   const manejarSubidaReq = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -64,21 +59,25 @@ export default function QASuiteStudio({ onOpenContact }) {
       } else {
         setVistaPreviaReqImg(null);
       }
+
+      const nombreLimpio = file.name.replace(/\.[^/.]+$/, "").toUpperCase();
+      const prefijoDinamico = nombreLimpio.length > 5 ? nombreLimpio.slice(0, 4) : nombreLimpio;
+
       setRequerimiento({
-        idHU: 'DOC-' + file.name.slice(0, 8).toUpperCase(),
+        idHU: 'REQ-' + prefijoDinamico,
+        prefijoID: prefijoDinamico,
         titulo: 'Requerimiento: ' + file.name,
-        descripcion: `Especificación cargada desde ${file.name} (${(file.size / 1024).toFixed(1)} KB). Analizando flujos transaccionales.`,
+        descripcion: `Especificación cargada desde ${file.name} (${(file.size / 1024).toFixed(1)} KB). IDs generados con trazabilidad [${prefijoDinamico}].`,
         origen: 'Archivo local (' + file.name + ')',
         criterios: [
-          'Validación de campos obligatorios y reglas de entrada.',
-          'Verificación de flujos alternos y excepciones en transacciones.',
-          'Comprobación de tiempos de respuesta y consistencia en BD.'
+          'Validación de reglas extraídas del documento.',
+          'Pruebas de frontera, flujos alternos y excepciones.',
+          'Consistencia y persistencia transaccional en base de datos.'
         ]
       });
     }
   };
 
-  // MANEJO DE CARGA DE ARCHIVO 2 (PLANTILLA / FORMATO)
   const manejarSubidaFormato = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -93,40 +92,67 @@ export default function QASuiteStudio({ onOpenContact }) {
     }
   };
 
-  // GENERADOR DE 50+ CASOS MASIVOS
-  const generarSuiteCompleta = (cantidad) => {
-    const areas = ['HP', 'TTF', 'Smoke', 'Concurrencia', 'Seguridad', 'Resiliencia', 'Auditoria'];
+  // GENERADOR MASIVO DINÁMICO (MÍNIMO 50 CASOS CON ID BASADO EN EL REQUERIMIENTO)
+  const generarSuiteConPrefijo = (prefijo, cantidad) => {
+    const areas = [
+      { code: 'HP', name: 'Happy Path', count: 10 },
+      { code: 'TTF', name: 'Test to Fail / Frontera', count: 10 },
+      { code: 'SMK', name: 'Smoke Test', count: 8 },
+      { code: 'CON', name: 'Concurrencia', count: 8 },
+      { code: 'SEC', name: 'Seguridad (XSS/SQLi)', count: 8 },
+      { code: 'RES', name: 'Resiliencia / Rollback', count: 8 },
+      { code: 'SQL', name: 'Auditoría SQL', count: 8 }
+    ]; // Total = 62 casos estructurados
+
     let suite = [];
-    for (let i = 1; i <= Math.max(50, cantidad); i++) {
-      const area = areas[(i - 1) % areas.length];
-      suite.push({
-        id: `TC-${area.toUpperCase()}-${i}`,
-        tipo: `Validación ${area} #${i}`,
-        categoriaMetrica: area,
-        pasosArray: [
-          { num: 1, accion: `Configurar ambiente para escenario ${area} #${i}.`, data: `Param_${i}=Activo`, esperado: 'Contexto inicializado.' },
-          { num: 2, accion: `Ejecutar transacción de prueba para ${area} #${i}.`, data: `Payload_ID: ${i}`, esperado: 'Respuesta conforme a requerimiento.' },
-          { num: 3, accion: 'Verificar persistencia en base de datos.', data: `Query: SELECT * FROM audit WHERE id = ${i}`, esperado: 'Registros inmutables guardados.' }
-        ],
-        valores: {
-          'ID_Caso': `TC-${area.toUpperCase()}-${i}`,
-          'Modulo_Core': `SPEI / Módulo ${area}`,
-          'Requerimiento_Asociado': requerimiento.idHU,
-          'Descripcion_Escenario': `Prueba técnica avanzada #${i} enfocada en ${area} para garantizar la calidad del software.`,
-          'Tipo_Validacion': `Validación Senior (${area})`,
-          'Precondiciones': `Ambiente configurado y servicios en línea para caso ${i}.`,
-          'Pasos_Detallados': `1. Inicializar contexto ${i}.\n2. Enviar petición.\n3. Validar BD.`,
-          'Valores_Entrada_TestData': `Dataset_ID: ${i}`,
-          'Comportamiento_Esperado': `El sistema responde con HTTP 200 y cumple el criterio ${i}.`,
-          'Severidad': i <= 10 ? 'Crítica' : 'Alta',
-          'Estado': 'Listo para Ejecución'
-        }
-      });
-    }
+    let contadorGlobal = 1;
+
+    areas.forEach(seccion => {
+      for (let i = 1; i <= seccion.count; i++) {
+        const idCaso = `TC-${prefijo}-${seccion.code}-${String(i).padStart(2, '0')}`;
+        suite.push({
+          id: idCaso,
+          tipo: `${seccion.name} #${i}`,
+          categoriaMetrica: seccion.code,
+          seccionNombre: seccion.name,
+          pasosArray: [
+            { num: 1, accion: `Configurar entorno para prueba ${seccion.name} #${i} bajo requerimiento ${requerimiento.idHU}.`, data: `Input_Ref=${prefijo}_${i}`, esperado: 'Entorno listo para validación.' },
+            { num: 2, accion: `Ejecutar validación de ${seccion.name.toLowerCase()} en el módulo de negocio.`, data: `Vector_Test=${seccion.code}_${i}`, esperado: 'Respuesta conforme a especificación técnica.' },
+            { num: 3, accion: 'Verificar registros de auditoría y persistencia en base de datos.', data: `Query: SELECT * FROM logs WHERE ref = '${idCaso}'`, esperado: 'Persistencia inmutable verificada.' }
+          ],
+          valores: {
+            'ID_Caso': idCaso,
+            'Modulo_Core': `${prefijo} / Módulo ${seccion.name}`,
+            'Requerimiento_Asociado': requerimiento.idHU,
+            'Descripcion_Escenario': `Validación experta (${seccion.name}) #${i} basada en la especificación del requerimiento ${requerimiento.idHU}.`,
+            'Tipo_Validacion': `QA Senior - ${seccion.name}`,
+            'Precondiciones': `Servicios core activos y parámetros cargados para ${idCaso}.`,
+            'Pasos_Detallados': `1. Configurar datos ${i}.\n2. Ejecutar transacción.\n3. Validar BD.`,
+            'Valores_Entrada_TestData': `Dataset_${seccion.code}_${i}`,
+            'Comportamiento_Esperado': `El sistema cumple con la regla de aceptación para ${seccion.name}.`,
+            'Severidad': i <= 3 ? 'Crítica' : 'Alta',
+            'Estado': 'Listo para Ejecución'
+          }
+        });
+        contadorGlobal++;
+      }
+    });
     return suite;
   };
 
-  const [suiteCompleta] = useState(generarSuiteCompleta(50));
+  const suiteCompleta = generarSuiteConPrefijo(requerimiento.prefijoID, 60);
+
+  // DESGLOSE POR SECCIÓN PARA LA TABLITA DE MÉTRICAS
+  const resumenSecciones = [
+    { codigo: 'HP', nombre: 'Happy Path', total: suiteCompleta.filter(c => c.categoriaMetrica === 'HP').length },
+    { codigo: 'TTF', nombre: 'Test to Fail / Frontera', total: suiteCompleta.filter(c => c.categoriaMetrica === 'TTF').length },
+    { codigo: 'SMK', nombre: 'Smoke Test', total: suiteCompleta.filter(c => c.categoriaMetrica === 'SMK').length },
+    { codigo: 'CON', nombre: 'Concurrencia', total: suiteCompleta.filter(c => c.categoriaMetrica === 'CON').length },
+    { codigo: 'SEC', nombre: 'Seguridad (XSS/SQLi)', total: suiteCompleta.filter(c => c.categoriaMetrica === 'SEC').length },
+    { codigo: 'RES', nombre: 'Resiliencia / Rollback', total: suiteCompleta.filter(c => c.categoriaMetrica === 'RES').length },
+    { codigo: 'SQL', nombre: 'Auditoría SQL', total: suiteCompleta.filter(c => c.categoriaMetrica === 'SQL').length }
+  ];
+
   const [pagina, setPagina] = useState(1);
   const casosPorPagina = 10;
   const inicio = (pagina - 1) * casosPorPagina;
@@ -186,7 +212,7 @@ export default function QASuiteStudio({ onOpenContact }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'Suite_QA_Completa_50_Casos.csv';
+    link.download = `Suite_QA_${requerimiento.prefijoID}_${suiteCompleta.length}_Casos.csv`;
     link.click();
     setModalCotizador(true);
   };
@@ -467,7 +493,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             )}
           >
             <span>📋</span>
-            <span>1. Generador de Matriz QA (Flujo 3 Pasos - 50 Casos)</span>
+            <span>1. Generador de Matriz QA (Flujo 3 Pasos - {suiteCompleta.length} Casos)</span>
           </button>
 
           <button
@@ -527,13 +553,13 @@ export default function QASuiteStudio({ onOpenContact }) {
               >
                 <div className="flex items-center gap-2">
                   <span className="h-6 w-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-mono text-xs font-bold">3</span>
-                  <span className="text-xs font-bold">Archivo 3: Suite QA (50+ Casos)</span>
+                  <span className="text-xs font-bold">Archivo 3: Suite QA ({suiteCompleta.length} Casos)</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">Ejecución interactiva & CSV UTF-8</p>
               </button>
             </div>
 
-            {/* FASE 1: SUBIR REQUERIMIENTO (CON LECTOR REAL DE ARCHIVOS) */}
+            {/* FASE 1: SUBIR REQUERIMIENTO */}
             {pasoMP === 1 && (
               <div className="space-y-5 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
@@ -582,7 +608,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                     <span className="font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800 text-[11px]">{requerimiento.idHU}</span>
                   </div>
                   <p className="text-slate-300"><strong className="text-slate-400">Origen:</strong> {requerimiento.origen}</p>
-                  <p className="text-slate-300"><strong className="text-slate-400">Descripción:</strong> {requerimiento.descripcion}</p>
+                  <p className="text-slate-300"><strong className="text-slate-400">Prefijo ID Trazable:</strong> <span className="font-mono text-emerald-400">{requerimiento.prefijoID}</span></p>
                 </div>
 
                 <div className="flex justify-end pt-2">
@@ -597,7 +623,7 @@ export default function QASuiteStudio({ onOpenContact }) {
               </div>
             )}
 
-            {/* FASE 2: SUBIR PLANTILLA / FORMATO (CON LECTOR REAL DE ARCHIVOS) */}
+            {/* FASE 2: SUBIR PLANTILLA / FORMATO */}
             {pasoMP === 2 && (
               <div className="space-y-5 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
@@ -669,23 +695,41 @@ export default function QASuiteStudio({ onOpenContact }) {
                     onClick={() => setPasoMP(3)}
                     className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer"
                   >
-                    <span>⚡ Generar Suite QA (50+ Casos)</span>
+                    <span>⚡ Generar Suite QA ({suiteCompleta.length} Casos Trazables)</span>
                     <span>➔</span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* FASE 3: SUITE QA CON 50+ CASOS */}
+            {/* FASE 3: SUITE QA CON TABLITA DE RESUMEN Y 50+ CASOS */}
             {pasoMP === 3 && (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-2.5">
-                    <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide">
-                      Resumen Ejecutivo: Suite Completa (50 Casos Exhaustivos de QA)
-                    </h4>
-                    <span className="text-[11px] text-cyan-400 font-mono">Total: {suiteCompleta.length} Casos</span>
+                {/* TABLITA DE RESUMEN DE NÚMERO DE CASOS POR SECCIÓN */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-3">
+                    <div>
+                      <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
+                        📊 Resumen de Cobertura & Distribución por Sección
+                      </span>
+                      <p className="text-[11px] text-slate-400">
+                        Total de casos generados para el requerimiento <strong className="text-white">{requerimiento.idHU}</strong> con prefijo <strong className="text-cyan-400">[{requerimiento.prefijoID}]</strong>:
+                      </p>
+                    </div>
+                    <div className="bg-emerald-950 text-emerald-300 border border-emerald-800 px-3 py-1.5 rounded-xl font-mono text-sm font-extrabold text-center">
+                      Total: {suiteCompleta.length} Casos
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-center">
+                    {resumenSecciones.map((sec) => (
+                      <div key={sec.codigo} className="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-1">
+                        <p className="text-[10px] uppercase font-bold text-slate-400">{sec.nombre}</p>
+                        <p className="text-lg font-extrabold text-cyan-400 font-mono">{sec.total}</p>
+                        <span className="text-[9px] text-slate-500 font-mono block">Código: {sec.codigo}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -693,7 +737,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">💼</span>
                     <div>
-                      <p className="font-bold text-emerald-300">Descarga CSV en UTF-8 o Ejecuta Paso a Paso en Vivo</p>
+                      <p className="font-bold text-emerald-300">Descarga CSV en UTF-8 con Trazabilidad o Ejecuta Paso a Paso en Vivo</p>
                     </div>
                   </div>
 
@@ -703,7 +747,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                       className="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-600 text-xs font-bold px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5"
                     >
                       <span>📥</span>
-                      <span>Exportar Suite (CSV UTF-8)</span>
+                      <span>Exportar Suite ({suiteCompleta.length} Casos CSV UTF-8)</span>
                     </button>
                   </div>
                 </div>
@@ -713,9 +757,9 @@ export default function QASuiteStudio({ onOpenContact }) {
                   <table className="w-full text-left text-xs text-slate-300 border-collapse">
                     <thead>
                       <tr className="border-b border-slate-800 text-slate-400 font-bold bg-slate-950 uppercase text-[10px] tracking-wider">
-                        <th className="py-3 px-3">ID Caso</th>
+                        <th className="py-3 px-3">ID Caso (Trazable)</th>
                         <th className="py-3 px-3">Escenario Técnico</th>
-                        <th className="py-3 px-3">Área / Métrica</th>
+                        <th className="py-3 px-3">Sección / Área</th>
                         <th className="py-3 px-3">Precondiciones</th>
                         <th className="py-3 px-2 text-center">Severidad</th>
                         <th className="py-3 px-2 text-center">Test Runner</th>
