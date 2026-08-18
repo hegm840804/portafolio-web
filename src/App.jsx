@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import Navbar from './components/Navbar'
 import HeroCarousel from './components/HeroCarousel'
 import ServiceTabs from './components/ServiceTabs'
@@ -20,28 +20,32 @@ export default function App() {
       className="notranslate min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-slate-100 flex flex-col font-sans pb-24 selection:bg-cyan-500 selection:text-white"
     >
       <Navbar onOpenContact={() => setModalContactoAbierto(true)} />
+      
       <main className="flex-1">
         <HeroCarousel />
+        
         <ServiceTabs
           servicioActivo={servicioActivo}
           setServicioActivo={setServicioActivo}
         />
+
         <Projects />
+
         <TechStack />
+
         <About 
           onOpenContact={() => setModalContactoAbierto(true)} 
           onOpenCV={() => setModalCVAbierto(true)} 
         />
       </main>
+
       <FloatingCTA onOpenContact={() => setModalContactoAbierto(true)} />
 
-      {/* Modal de Contacto */}
       <ContactModal
         isOpen={modalContactoAbierto}
         onClose={() => setModalContactoAbierto(false)}
       />
 
-      {/* Modal de Selección y Descarga de CV */}
       <CVDownloadModal
         isOpen={modalCVAbierto}
         onClose={() => setModalCVAbierto(false)}
