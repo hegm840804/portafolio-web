@@ -1,11 +1,58 @@
 import { useState } from 'react';
 
 export default function QASuiteStudio({ onOpenContact }) {
-  const [pestanaActiva, setPestanaActiva] = useState('matriz');
+  const [pestanaActiva, setPestanaActiva] = useState('matriz'); // 'matriz' | 'n8n'
 
   // =========================================================================
-  // GENERADOR MASIVO DE SUITE SENIOR (MÍNIMO 50 CASOS EXHAUSTIVOS)
+  // 1. GENERADOR DE MATRIZ CON FLUJO DE 3 PASOS Y 50+ CASOS SENIOR
   // =========================================================================
+  const [pasoMP, setPasoMP] = useState(1);
+  const [alertaSeguridad, setAlertaSeguridad] = useState(false);
+  const [modalCotizador, setModalCotizador] = useState(false);
+  const [cotizacionEnviada, setCotizacionEnviada] = useState(false);
+  const [procesandoPaso, setProcesandoPaso] = useState(false);
+
+  // ARCHIVO 1: REQUERIMIENTOS
+  const [modoEntradaReq, setModoEntradaReq] = useState('ejemplos');
+  const [archivoReqNombre, setArchivoReqNombre] = useState(null);
+  const [vistaPreviaReqImg, setVistaPreviaReqImg] = useState(null);
+  const [textoLibreReq, setTextoLibreReq] = useState('');
+
+  const [requerimiento, setRequerimiento] = useState({
+    idHU: 'HU-SPEI-104',
+    titulo: 'Módulo de Transferencias Interbancarias SPEI en Tiempo Real',
+    descripcion: 'Como cuentahabiente, deseo transferir fondos a cuentas CLABE de otros bancos para realizar pagos inmediatos de forma segura.',
+    origen: 'Especificación Core Bancario / FinTech',
+    criterios: [
+      'La cuenta CLABE debe contener exactamente 18 dígitos numéricos válidos bajo algoritmo Módulo 10 Banxico.',
+      'El monto a transferir debe ser mayor a $0.00 y menor o igual al saldo líquido disponible.',
+      'Toda transacción aprobada debe generar un folio de rastreo CEP único y persistir en base de datos.',
+      'Si el servicio bancario tarda más de 10 segundos, aplicar rollback automático sin afectación al saldo.'
+    ]
+  });
+
+  // ARCHIVO 2: PLANTILLA / ESTRUCTURA DE MATRIZ
+  const [modoEntradaFormato, setModoEntradaFormato] = useState('subir');
+  const [archivoFormatoNombre, setArchivoFormatoNombre] = useState(null);
+  const [vistaPreviaFormatoImg, setVistaPreviaFormatoImg] = useState(null);
+
+  const [columnasPersonalizadas, setColumnasPersonalizadas] = useState([
+    'ID_Caso',
+    'Modulo_Core',
+    'Requerimiento_Asociado',
+    'Descripcion_Escenario',
+    'Tipo_Validacion',
+    'Precondiciones',
+    'Pasos_Detallados',
+    'Valores_Entrada_TestData',
+    'Comportamiento_Esperado',
+    'Severidad',
+    'Estado'
+  ]);
+
+  const [nuevaColumna, setNuevaColumna] = useState('');
+
+  // GENERADOR DE 50+ CASOS MASIVOS
   const generarSuiteCompleta = (cantidad) => {
     const areas = ['HP', 'TTF', 'Smoke', 'Concurrencia', 'Seguridad', 'Resiliencia', 'Auditoria'];
     let suite = [];
@@ -23,7 +70,7 @@ export default function QASuiteStudio({ onOpenContact }) {
         valores: {
           'ID_Caso': `TC-${area.toUpperCase()}-${i}`,
           'Modulo_Core': `SPEI / Módulo ${area}`,
-          'Requerimiento_Asociado': 'HU-SPEI-104',
+          'Requerimiento_Asociado': requerimiento.idHU,
           'Descripcion_Escenario': `Prueba técnica avanzada #${i} enfocada en ${area} para garantizar la resiliencia y calidad del software.`,
           'Tipo_Validacion': `Validación Senior (${area})`,
           'Precondiciones': `Ambiente configurado, token de sesión activo y servicios core en línea para caso ${i}.`,
@@ -42,7 +89,6 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [suiteCompleta] = useState(generarSuiteCompleta(50));
   const [pagina, setPagina] = useState(1);
   const casosPorPagina = 10;
-
   const inicio = (pagina - 1) * casosPorPagina;
   const casosVisibles = suiteCompleta.slice(inicio, inicio + casosPorPagina);
 
@@ -84,11 +130,9 @@ export default function QASuiteStudio({ onOpenContact }) {
 
   // EXPORTAR CSV UTF-8 BOM
   const exportarCSVLimpo = () => {
-    const columnas = ['ID_Caso', 'Modulo_Core', 'Requerimiento_Asociado', 'Descripcion_Escenario', 'Tipo_Validacion', 'Precondiciones', 'Pasos_Detallados', 'Valores_Entrada_TestData', 'Comportamiento_Esperado', 'Severidad', 'Estado'];
-    let csv = '\uFEFF' + columnas.join(',') + '\n';
-    
+    let csv = '\uFEFF' + columnasPersonalizadas.join(',') + '\n';
     suiteCompleta.forEach((c) => {
-      const fila = columnas.map(col => {
+      const fila = columnasPersonalizadas.map(col => {
         let val = c.valores[col] || 'N/A';
         if (typeof val === 'string') {
           val = val.replace(/^[=+\-@]/, "'").replace(/"/g, '""').replace(/\r?\n/g, ' ');
@@ -104,12 +148,168 @@ export default function QASuiteStudio({ onOpenContact }) {
     link.href = url;
     link.download = 'Suite_QA_Completa_50_Casos.csv';
     link.click();
+    setModalCotizador(true);
+  };
+
+  // =========================================================================
+  // 2. MÓDULO N8N & WEBHOOKS
+  // =========================================================================
+  const [tipoEvento, setTipoEvento] = useState('lead');
+  const [endpointUrl, setEndpointUrl] = useState('https://automation.martin-qa.dev/webhook/v1/lead-dispatcher');
+  const [nodoActivoIndex, setNodoActivoIndex] = useState(-1);
+  const [ejecutandoN8n, setEjecutandoN8n] = useState(false);
+  const [errorJson, setErrorJson] = useState('');
+
+  const [payloadJson, setPayloadJson] = useState(JSON.stringify({
+    evento: "NUEVO_LEAD_PORTAFOLIO",
+    origen: "Portafolio Web Oficial",
+    cliente: {
+      nombre: "Martin Tonatiuh Hernandez Garfias",
+      empresa: "Servicios de Automatización & QA",
+      email: "hegmtona2024@gmail.com",
+      telefono: "+52 56 1562 5182"
+    },
+    requerimiento: {
+      servicio: "QA Functional & Automation Suite",
+      prioridad: "Alta",
+      fechaSolicitud: new Date().toISOString()
+    }
+  }, null, 2));
+
+  const [logSalida, setLogSalida] = useState({
+    status: 200,
+    mensaje: 'Flujo listo para recibir eventos HTTP POST y procesar payloads JSON.',
+    tiempoTotal: '38ms',
+    idEjecucion: 'EXEC-N8N-84920',
+    datosResultado: {
+      statusProcesamiento: "COMPLETADO",
+      correoNotificado: "hegmtona2024@gmail.com",
+      canalAlertas: "WhatsApp API",
+      trazabilidadQA: "REGISTRADA"
+    },
+    nodos: [
+      { id: 1, nombre: '1. Webhook Receiver', tipo: 'POST /webhook', estado: 'Listo', latencia: '12ms' },
+      { id: 2, nombre: '2. Schema Validator', tipo: 'n8n-nodes-base.if', estado: 'Listo', latencia: '8ms' },
+      { id: 3, nombre: '3. Data Transform & QA', tipo: 'n8n-nodes-base.set', estado: 'Listo', latencia: '11ms' },
+      { id: 4, nombre: '4. Gmail & WhatsApp Dispatch', tipo: 'n8n-nodes-base.emailSend', estado: 'Listo', latencia: '7ms' }
+    ]
+  });
+
+  const cambiarEvento = (e) => {
+    const val = e.target.value;
+    setTipoEvento(val);
+    setErrorJson('');
+
+    if (val === 'lead') {
+      setEndpointUrl('https://automation.martin-qa.dev/webhook/v1/lead-dispatcher');
+      setPayloadJson(JSON.stringify({
+        evento: "NUEVO_LEAD_PORTAFOLIO",
+        cliente: {
+          nombre: "Martin Tonatiuh Hernandez Garfias",
+          empresa: "Servicios de Automatización & QA",
+          email: "hegmtona2024@gmail.com",
+          telefono: "+52 56 1562 5182"
+        },
+        requerimiento: {
+          servicio: "QA Functional & Automation Suite",
+          prioridad: "Alta",
+          fechaSolicitud: new Date().toISOString()
+        }
+      }, null, 2));
+    } else if (val === 'bug') {
+      setEndpointUrl('https://automation.martin-qa.dev/webhook/v1/jira-bug-sync');
+      setPayloadJson(JSON.stringify({
+        evento: "BUG_REPORT_ALERT",
+        idIncidencia: "QA-BUG-1092",
+        severidad: "Crítica",
+        moduloAfectado: "SPEI / Core Transferencias",
+        descripcion: "Fallo en algoritmo de dígito verificador CLABE",
+        ambiente: "Staging / Pre-Producción",
+        reportadoPor: "Martin Hernandez (QA Lead)"
+      }, null, 2));
+    } else if (val === 'api-health') {
+      setEndpointUrl('https://automation.martin-qa.dev/webhook/v1/api-monitor');
+      setPayloadJson(JSON.stringify({
+        evento: "HEALTH_CHECK_MONITOR",
+        servicio: "API REST Pagos SPEI",
+        codigoRespuesta: 200,
+        latenciaMs: 46,
+        disponibilidad: "99.98%",
+        timestamp: new Date().toISOString()
+      }, null, 2));
+    }
+  };
+
+  const ejecutarFlujoN8n = () => {
+    try {
+      JSON.parse(payloadJson);
+      setErrorJson('');
+    } catch {
+      setErrorJson('El formato JSON contiene errores. Corrige la sintaxis.');
+      return;
+    }
+
+    setEjecutandoN8n(true);
+    setNodoActivoIndex(0);
+
+    setTimeout(() => setNodoActivoIndex(1), 250);
+    setTimeout(() => setNodoActivoIndex(2), 550);
+    setTimeout(() => {
+      setNodoActivoIndex(3);
+      const parsed = JSON.parse(payloadJson);
+      const randomLat = Math.floor(Math.random() * 15 + 32);
+      const randomExec = 'EXEC-N8N-' + Math.floor(Math.random() * 89999 + 10000);
+
+      setLogSalida({
+        status: 200,
+        mensaje: "Evento '" + (parsed.evento || 'HTTP_EVENT') + "' procesado exitosamente por la canalización.",
+        tiempoTotal: randomLat + 'ms',
+        idEjecucion: randomExec,
+        datosResultado: {
+          statusProcesamiento: "COMPLETADO_OK",
+          payloadRecibido: parsed.evento || "EVENTO_VALIDO",
+          correoDestinatario: "hegmtona2024@gmail.com",
+          idEjecucion: randomExec,
+          timestamp: new Date().toLocaleTimeString()
+        },
+        nodos: [
+          { id: 1, nombre: '1. Webhook Receiver', tipo: 'POST /webhook', estado: '200 OK', latencia: '11ms' },
+          { id: 2, nombre: '2. Schema Validator', tipo: 'n8n-nodes-base.if', estado: 'Validado', latencia: '8ms' },
+          { id: 3, nombre: '3. Data Transform & QA', tipo: 'n8n-nodes-base.set', estado: 'Estructurado', latencia: '9ms' },
+          { id: 4, nombre: '4. Gmail & WhatsApp Dispatch', tipo: 'n8n-nodes-base.emailSend', estado: 'Despachado', latencia: '7ms' }
+        ]
+      });
+
+      setEjecutandoN8n(false);
+      setNodoActivoIndex(-1);
+    }, 900);
+  };
+
+  const descargarBlueprintN8N = () => {
+    const workflowJSON = {
+      name: "Workflow_n8n_" + tipoEvento.toUpperCase() + "_Oficial",
+      nodes: [
+        { name: "Webhook Receiver", type: "n8n-nodes-base.webhook", parameters: { httpMethod: "POST", path: "contacto-portafolio" } },
+        { name: "Validate Schema", type: "n8n-nodes-base.if", parameters: { conditions: { string: [{ value1: "={{ $json.evento }}", operation: "isNotEmpty" }] } } },
+        { name: "Transform QA Data", type: "n8n-nodes-base.set", parameters: { values: { string: [{ name: "status", value: "PROCESADO_QA" }] } } },
+        { name: "Send Alerts & Gmail", type: "n8n-nodes-base.emailSend", parameters: { toEmail: "hegmtona2024@gmail.com" } }
+      ]
+    };
+
+    const blob = new Blob([JSON.stringify(workflowJSON, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', "n8n_Workflow_" + tipoEvento.toUpperCase() + ".json");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
     <section id="automatizaciones" className="max-w-6xl mx-auto px-4 py-16 w-full scroll-mt-24">
       
-      {/* MODAL: EJECUTOR PASO A PASO (TEST RUNNER) */}
+      {/* MODAL EJECUTOR PASO A PASO */}
       {ejecutorActivo && casoEnEjecucion && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
           <div className="relative w-full max-w-2xl bg-slate-900 border border-cyan-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-100 space-y-5 max-h-[92vh] overflow-y-auto">
@@ -215,100 +415,416 @@ export default function QASuiteStudio({ onOpenContact }) {
         </div>
       )}
 
-      {/* SECCIÓN PRINCIPAL */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-        
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-800 pb-5">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-950 border border-emerald-500/40 px-3 py-1 rounded-full text-xs font-semibold text-emerald-300 mb-2">
-              <span>📋 Suite Corporativa Validada</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Suite QA Senior ({suiteCompleta.length} Casos Exhaustivos)
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Visualiza la estructura completa de casos y ejecútalos paso a paso en tiempo real.
-            </p>
-          </div>
+      {/* SELECTOR DE PESTAÑAS PRINCIPALES */}
+      <div className="text-center max-w-2xl mx-auto mb-8">
+        <div className="inline-flex items-center gap-2 bg-slate-950 border border-slate-800 p-1.5 rounded-2xl shadow-xl">
+          <button
+            onClick={() => setPestanaActiva('matriz')}
+            className={'px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ' + (
+              pestanaActiva === 'matriz'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            )}
+          >
+            <span>📋</span>
+            <span>1. Generador de Matriz QA (Flujo 3 Pasos - 50 Casos)</span>
+          </button>
 
           <button
-            onClick={exportarCSVLimpo}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition cursor-pointer flex items-center gap-2 whitespace-nowrap"
+            onClick={() => setPestanaActiva('n8n')}
+            className={'px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ' + (
+              pestanaActiva === 'n8n'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            )}
           >
-            <span>📥</span>
-            <span>Exportar Suite Completa (CSV UTF-8)</span>
+            <span>🤖</span>
+            <span>2. Orquestador n8n & Webhooks</span>
           </button>
         </div>
+      </div>
 
-        {/* TABLA FORMAL CON ESTRUCTURA COMPLETA */}
-        <div className="overflow-x-auto border border-slate-800 rounded-2xl">
-          <table className="w-full text-left text-xs text-slate-300 border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 font-bold bg-slate-950 uppercase text-[10px] tracking-wider">
-                <th className="py-3 px-3">ID Caso</th>
-                <th className="py-3 px-3">Escenario Técnico</th>
-                <th className="py-3 px-3">Área / Métrica</th>
-                <th className="py-3 px-3">Precondiciones</th>
-                <th className="py-3 px-2 text-center">Severidad</th>
-                <th className="py-3 px-2 text-center">Test Runner</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-sans">
-              {casosVisibles.map((caso) => (
-                <tr key={caso.id} className="hover:bg-slate-950/60 transition">
-                  <td className="py-3 px-3 font-mono font-bold text-cyan-400 whitespace-nowrap">{caso.id}</td>
-                  <td className="py-3 px-3">
-                    <p className="font-semibold text-white">{caso.valores.Descripcion_Escenario}</p>
-                    <span className="text-[10px] text-slate-400">{caso.valores.Modulo_Core}</span>
-                  </td>
-                  <td className="py-3 px-3 whitespace-nowrap">
-                    <span className="bg-slate-950 text-slate-300 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">
-                      {caso.categoriaMetrica}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-[11px] text-slate-400 max-w-xs truncate">{caso.valores.Precondiciones}</td>
-                  <td className="py-3 px-2 text-center">
-                    <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + (
-                      caso.valores.Severidad === 'Crítica' ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
-                    )}>
-                      {caso.valores.Severidad}
-                    </span>
-                  </td>
-                  <td className="py-3 px-2 text-center whitespace-nowrap">
-                    <button
-                      onClick={() => iniciarEjecucionPasoAPaso(caso)}
-                      className="text-[10px] bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 text-white font-bold px-3 py-1.5 rounded-xl shadow transition transform active:scale-95 cursor-pointer flex items-center gap-1 mx-auto"
-                    >
-                      <span>▶️</span>
-                      <span>Ejecutar Paso a Paso</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Paginación Formal */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs">
-          <span className="text-slate-400">
-            Mostrando casos <strong className="text-white">{inicio + 1}</strong> a <strong className="text-white">{Math.min(inicio + casosPorPagina, suiteCompleta.length)}</strong> de <strong className="text-white">{suiteCompleta.length}</strong> totales en la suite.
-          </span>
-
-          <div className="flex items-center gap-1.5">
-            {Array.from({ length: Math.ceil(suiteCompleta.length / casosPorPagina) }).map((_, i) => (
+      {/* CONTENEDOR PRINCIPAL */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        
+        {/* PESTAÑA 1: MATRIZ QA CON LOS 3 PASOS */}
+        {pestanaActiva === 'matriz' && (
+          <div className="space-y-6">
+            
+            {/* Pasos */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-800 pb-5">
               <button
-                key={i}
-                onClick={() => setPagina(i + 1)}
-                className={'w-8 h-8 rounded-xl font-bold text-xs transition cursor-pointer ' + (
-                  pagina === i + 1 ? 'bg-cyan-600 text-white shadow-md' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                onClick={() => setPasoMP(1)}
+                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
+                  pasoMP === 1 ? 'bg-emerald-950 border-emerald-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
                 )}
               >
-                {i + 1}
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-mono text-xs font-bold">1</span>
+                  <span className="text-xs font-bold">Archivo 1: Requerimientos</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">Sube doc, imagen o describe el flujo</p>
               </button>
-            ))}
+
+              <button
+                onClick={() => setPasoMP(2)}
+                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
+                  pasoMP === 2 ? 'bg-cyan-950 border-cyan-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-mono text-xs font-bold">2</span>
+                  <span className="text-xs font-bold">Archivo 2: Tu Plantilla / Columnas</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">Sube formato (imagen, Excel o texto)</p>
+              </button>
+
+              <button
+                onClick={() => setPasoMP(3)}
+                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
+                  pasoMP === 3 ? 'bg-purple-950 border-purple-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-mono text-xs font-bold">3</span>
+                  <span className="text-xs font-bold">Archivo 3: Suite QA (50+ Casos)</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">Ejecución interactiva & CSV UTF-8</p>
+              </button>
+            </div>
+
+            {/* FASE 1 */}
+            {pasoMP === 1 && (
+              <div className="space-y-5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
+                      Archivo 1: Ingreso de Requerimiento (Doc / Imagen / Texto)
+                    </span>
+                    <p className="text-[11px] text-slate-400">Provee la especificación de lo que deseas probar.</p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
+                  <label className="block text-slate-300 font-bold mb-1">Caso de Uso Bancario / FinTech Preconfigurado:</label>
+                  <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-emerald-300 font-semibold">
+                    🏦 Módulo SPEI / Transferencias Bancarias en Tiempo Real (FinTech & Banca Core)
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => setPasoMP(2)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
+                  >
+                    <span>Siguiente: Analizar Mi Formato de Casos (Archivo 2)</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* FASE 2 */}
+            {pasoMP === 2 && (
+              <div className="space-y-5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div>
+                    <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">
+                      Archivo 2: Subir Formato de Matriz del Usuario (Imagen, Excel, Doc o Texto)
+                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      Sube tu plantilla y el motor mapeará automáticamente las columnas.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span className="font-bold text-white text-xs">📐 Estructura de Columnas Activa ({columnasPersonalizadas.length} Columnas)</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {columnasPersonalizadas.map((col, idx) => (
+                      <span key={idx} className="bg-slate-900 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-2 font-medium">
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                        <span>{col}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={() => setPasoMP(1)}
+                    className="bg-slate-950 hover:bg-slate-800 text-slate-400 text-xs px-4 py-2 rounded-xl cursor-pointer"
+                  >
+                    ← Volver
+                  </button>
+
+                  <button
+                    onClick={() => setPasoMP(3)}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer"
+                  >
+                    <span>⚡ Generar Suite QA (50+ Casos)</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* FASE 3 */}
+            {pasoMP === 3 && (
+              <div className="space-y-5">
+                
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                    <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide">
+                      Resumen Ejecutivo: Suite Completa (50 Casos Exhaustivos de QA)
+                    </h4>
+                    <span className="text-[11px] text-cyan-400 font-mono">Total: {suiteCompleta.length} Casos</span>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border border-emerald-500/40 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">💼</span>
+                    <div>
+                      <p className="font-bold text-emerald-300">Descarga CSV en UTF-8 o Ejecuta Paso a Paso en Vivo</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={exportarCSVLimpo}
+                      className="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-600 text-xs font-bold px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>📥</span>
+                      <span>Exportar Suite (CSV UTF-8)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* TABLA FORMAL CON ESTRUCTURA COMPLETA */}
+                <div className="overflow-x-auto border border-slate-800 rounded-2xl">
+                  <table className="w-full text-left text-xs text-slate-300 border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400 font-bold bg-slate-950 uppercase text-[10px] tracking-wider">
+                        <th className="py-3 px-3">ID Caso</th>
+                        <th className="py-3 px-3">Escenario Técnico</th>
+                        <th className="py-3 px-3">Área / Métrica</th>
+                        <th className="py-3 px-3">Precondiciones</th>
+                        <th className="py-3 px-2 text-center">Severidad</th>
+                        <th className="py-3 px-2 text-center">Test Runner</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-sans">
+                      {casosVisibles.map((caso) => (
+                        <tr key={caso.id} className="hover:bg-slate-950/60 transition">
+                          <td className="py-3 px-3 font-mono font-bold text-cyan-400 whitespace-nowrap">{caso.id}</td>
+                          <td className="py-3 px-3">
+                            <p className="font-semibold text-white">{caso.valores.Descripcion_Escenario}</p>
+                            <span className="text-[10px] text-slate-400">{caso.valores.Modulo_Core}</span>
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <span className="bg-slate-950 text-slate-300 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">
+                              {caso.categoriaMetrica}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-[11px] text-slate-400 max-w-xs truncate">{caso.valores.Precondiciones}</td>
+                          <td className="py-3 px-2 text-center">
+                            <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + (
+                              caso.valores.Severidad === 'Crítica' ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
+                            )}>
+                              {caso.valores.Severidad}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 text-center whitespace-nowrap">
+                            <button
+                              onClick={() => iniciarEjecucionPasoAPaso(caso)}
+                              className="text-[10px] bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 text-white font-bold px-3 py-1.5 rounded-xl shadow transition transform active:scale-95 cursor-pointer flex items-center gap-1 mx-auto"
+                            >
+                              <span>▶️</span>
+                              <span>Ejecutar Paso a Paso</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Paginación */}
+                <div className="flex justify-between items-center pt-2 text-xs">
+                  <button onClick={() => setPasoMP(2)} className="text-slate-400 underline cursor-pointer">← Volver al Formato</button>
+                  <div className="flex gap-1.5">
+                    {Array.from({ length: Math.ceil(suiteCompleta.length / casosPorPagina) }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setPagina(i + 1)}
+                        className={'w-8 h-8 rounded-xl font-bold text-xs cursor-pointer ' + (
+                          pagina === i + 1 ? 'bg-cyan-600 text-white' : 'bg-slate-950 text-slate-400 border border-slate-800'
+                        )}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
           </div>
-        </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* PESTAÑA 2: ORQUESTADOR N8N */}
+        {/* ========================================================================= */}
+        {pestanaActiva === 'n8n' && (
+          <div className="space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-8">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-cyan-950/80 border border-cyan-500/40 px-3 py-1 rounded-full text-xs font-semibold text-cyan-300 mb-2">
+                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                  <span>Módulo Funcional: Automatización con n8n</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+                  Orquestación de Flujos & Webhooks en Vivo
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                  Prueba la recepción de peticiones HTTP, validación de schemas JSON y despacho de alertas en tiempo real.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={tipoEvento}
+                  onChange={cambiarEvento}
+                  className="bg-slate-950 border border-slate-700 text-xs text-cyan-300 font-semibold px-3 py-2 rounded-xl focus:outline-none cursor-pointer"
+                >
+                  <option value="lead">📨 Captura de Lead / Cotización</option>
+                  <option value="bug">🐛 Reporte de Defecto (Jira QA)</option>
+                  <option value="api-health">🩺 Health-Check API SPEI</option>
+                </select>
+
+                <button
+                  onClick={descargarBlueprintN8N}
+                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>📥</span>
+                  <span>Descargar Workflow (.JSON)</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-slate-950 border border-slate-800 p-5 rounded-2xl space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Método & Endpoint HTTP POST:</label>
+                    <div className="flex gap-2">
+                      <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold px-2.5 py-1.5 rounded-lg text-xs">
+                        POST
+                      </span>
+                      <input
+                        type="text"
+                        value={endpointUrl}
+                        onChange={(e) => setEndpointUrl(e.target.value)}
+                        className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-cyan-300 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-slate-400 font-semibold">Cuerpo JSON (Editable):</label>
+                      <span className="text-[10px] text-slate-500 font-mono">application/json</span>
+                    </div>
+                    <textarea
+                      rows="8"
+                      value={payloadJson}
+                      onChange={(e) => setPayloadJson(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-200 focus:border-cyan-500 focus:outline-none resize-none leading-relaxed"
+                    ></textarea>
+                    {errorJson && (
+                      <p className="text-rose-400 text-[11px] font-semibold mt-1">⚠️ {errorJson}</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={ejecutarFlujoN8n}
+                    disabled={ejecutandoN8n}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-white font-bold text-xs rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <span>{ejecutandoN8n ? '⚙️' : '⚡'}</span>
+                    <span>{ejecutandoN8n ? 'Ejecutando Nodos n8n...' : 'Disparar Webhook & Flujo en Vivo'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-7 space-y-4">
+                <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <span>🔗</span>
+                      <span>Pipeline de Nodos n8n</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                      ID: {logSalida.idEjecucion}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    {logSalida.nodos.map((nodo, idx) => (
+                      <div
+                        key={nodo.id}
+                        className={'p-3 rounded-xl border transition-all duration-300 flex items-center justify-between ' + (
+                          nodoActivoIndex === idx
+                            ? 'bg-cyan-950 border-cyan-400 scale-[1.03] shadow-lg shadow-cyan-950/50'
+                            : 'bg-slate-900 border-slate-800'
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={'h-2.5 w-2.5 rounded-full ' + (
+                            nodoActivoIndex === idx ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400'
+                          )}></span>
+                          <div>
+                            <p className="font-bold text-white text-[11px]">{nodo.nombre}</p>
+                            <p className="text-[10px] text-slate-400">{nodo.tipo}</p>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] font-mono font-bold text-emerald-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                          {nodo.estado}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl font-mono text-xs text-slate-300 space-y-2">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span className="text-emerald-400 font-bold text-[11px]">
+                      ✓ HTTP {logSalida.status} OK • Latencia: {logSalida.tiempoTotal}
+                    </span>
+                    <span className="text-slate-500 text-[10px]">Trazabilidad Activa</span>
+                  </div>
+
+                  <p className="text-cyan-300 text-[11px] leading-relaxed">
+                    {logSalida.mensaje}
+                  </p>
+
+                  <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-[10px] text-slate-300 overflow-x-auto">
+                    <span className="text-slate-500 font-bold block mb-1">Payload de Respuesta:</span>
+                    <pre className="text-emerald-300 font-mono">
+                      {JSON.stringify(logSalida.datosResultado, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </section>
