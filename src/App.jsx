@@ -32,7 +32,7 @@ export default function App() {
 
         <Projects />
 
-        {/* Módulo n8n & Automatización Funcional */}
+        {/* Sección n8n Interactiva */}
         <N8NAutomation onOpenContact={() => setModalContactoAbierto(true)} />
 
         <TechStack />

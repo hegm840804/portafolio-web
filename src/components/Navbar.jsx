@@ -25,10 +25,20 @@ export default function Navbar({ onOpenContact }) {
 
           <Logo />
 
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-300">
+          <nav className="hidden lg:flex items-center gap-5 text-sm font-medium text-slate-300">
             <a href="#capacidades" className="hover:text-cyan-400 transition">Capacidades</a>
             <a href="#servicios" className="hover:text-cyan-400 transition">Servicios</a>
             <a href="#proyectos" className="hover:text-cyan-400 transition">Proyectos</a>
+            
+            {/* Opción en barra de navegación */}
+            <a 
+              href="#automatizaciones" 
+              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-cyan-950 to-blue-950 border border-cyan-500/50 hover:border-cyan-400 px-3.5 py-1 rounded-full text-xs font-bold text-cyan-300 hover:text-white transition shadow-sm"
+            >
+              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span>⚡ Demos & n8n</span>
+            </a>
+
             <a href="#stack" className="hover:text-cyan-400 transition">Tecnologías</a>
             <a href="#sobre-mi" className="hover:text-cyan-400 transition">Sobre Mí</a>
             <button onClick={onOpenContact} className="hover:text-cyan-400 transition focus:outline-none cursor-pointer">Contacto</button>
@@ -49,6 +59,7 @@ export default function Navbar({ onOpenContact }) {
             <a href="#capacidades" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Capacidades</a>
             <a href="#servicios" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Servicios</a>
             <a href="#proyectos" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Proyectos</a>
+            <a href="#automatizaciones" onClick={() => setMenuAbierto(false)} className="py-2.5 px-3 bg-cyan-950/80 border border-cyan-500/50 rounded-xl text-cyan-300 font-bold">⚡ Demos & n8n</a>
             <a href="#stack" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Tecnologías</a>
             <a href="#sobre-mi" onClick={() => setMenuAbierto(false)} className="py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400">Sobre Mí</a>
             <button onClick={() => { setMenuAbierto(false); onOpenContact(); }} className="text-left py-2 px-3 hover:bg-slate-800 rounded-lg hover:text-cyan-400 cursor-pointer">Contacto</button>
