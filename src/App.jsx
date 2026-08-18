@@ -3,6 +3,7 @@ import Navbar from './components/Navbar'
 import HeroCarousel from './components/HeroCarousel'
 import ServiceTabs from './components/ServiceTabs'
 import Projects from './components/Projects'
+import N8NAutomation from './components/N8NAutomation'
 import TechStack from './components/TechStack'
 import About from './components/About'
 import FloatingCTA from './components/FloatingCTA'
@@ -30,6 +31,9 @@ export default function App() {
         />
 
         <Projects />
+
+        {/* Módulo n8n & Automatización Funcional */}
+        <N8NAutomation onOpenContact={() => setModalContactoAbierto(true)} />
 
         <TechStack />
 
