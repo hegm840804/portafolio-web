@@ -1,16 +1,179 @@
 ﻿import { useState, useEffect } from 'react';
 
 export default function AutomationsDemo({ onOpenContact }) {
-  const [seccionActiva, setSeccionActiva] = useState('matriz');
+  const [seccionActiva, setSeccionActiva] = useState('asistente'); // Por defecto abre en n8n
 
   // =========================================================================
-  // 1. GENERADOR DE MP (ARCHIVO 1: SUBIDA / DESCRIPCIÓN LIBRE)
+  // 2. ORQUESTADOR N8N / WEBHOOK PIPELINE (100% FUNCIONAL E INTERACTIVO)
+  // =========================================================================
+  const [tipoEventoWebhook, setTipoEventoWebhook] = useState('lead');
+  const [testEndpoint, setTestEndpoint] = useState('https://automation.martin-qa.dev/webhook/v1/lead-dispatcher');
+  const [nodoActivoIndex, setNodoActivoIndex] = useState(-1);
+  const [probandoFlujo, setProbandoFlujo] = useState(false);
+  const [errorJson, setErrorJson] = useState('');
+
+  // Payload JSON editable
+  const [payloadPersonalizado, setPayloadPersonalizado] = useState(JSON.stringify({
+    evento: "NUEVO_LEAD_PORTAFOLIO",
+    origen: "Portafolio Web Oficial",
+    cliente: {
+      nombre: "Martin Tonatiuh Hernandez Garfias",
+      empresa: "Servicios de Automatización & QA",
+      email: "hegmtona2024@gmail.com",
+      telefono: "+52 56 1562 5182"
+    },
+    requerimiento: {
+      servicio: "QA Functional & Automation Suite",
+      prioridad: "Alta",
+      fechaSolicitud: new Date().toISOString()
+    }
+  }, null, 2));
+
+  // Log y estado de respuesta
+  const [logRespuesta, setLogRespuesta] = useState({
+    status: 200,
+    mensaje: 'Flujo listo para recibir eventos HTTP POST y procesar payloads JSON.',
+    tiempo: '38ms',
+    idEjecucion: 'EXEC-N8N-84920',
+    datosSalida: {
+      statusProcesamiento: "COMPLETADO",
+      correoNotificado: "hegmtona2024@gmail.com",
+      canalAlertas: "WhatsApp Business API",
+      trazabilidadQA: "REGISTRADA"
+    },
+    nodosEjecutados: [
+      { id: 1, nombre: '1. Webhook Receiver', tipo: 'n8n-nodes-base.webhook', estado: 'Listo', latencia: '12ms' },
+      { id: 2, nombre: '2. Schema Validation', tipo: 'n8n-nodes-base.if', estado: 'Listo', latencia: '8ms' },
+      { id: 3, nombre: '3. Data Transform & QA', tipo: 'n8n-nodes-base.set', estado: 'Listo', latencia: '11ms' },
+      { id: 4, nombre: '4. Gmail & Alert Dispatch', tipo: 'n8n-nodes-base.emailSend', estado: 'Listo', latencia: '7ms' }
+    ]
+  });
+
+  const cambiarPlantillaWebhook = (e) => {
+    const val = e.target.value;
+    setTipoEventoWebhook(val);
+    setErrorJson('');
+    if (val === 'lead') {
+      setTestEndpoint('https://automation.martin-qa.dev/webhook/v1/lead-dispatcher');
+      setPayloadPersonalizado(JSON.stringify({
+        evento: "NUEVO_LEAD_PORTAFOLIO",
+        cliente: {
+          nombre: "Martin Tonatiuh Hernandez Garfias",
+          empresa: "Servicios de Automatización & QA",
+          email: "hegmtona2024@gmail.com",
+          telefono: "+52 56 1562 5182"
+        },
+        requerimiento: {
+          servicio: "QA Functional & Automation Suite",
+          prioridad: "Alta",
+          fechaSolicitud: new Date().toISOString()
+        }
+      }, null, 2));
+    } else if (val === 'bug') {
+      setTestEndpoint('https://automation.martin-qa.dev/webhook/v1/jira-bug-sync');
+      setPayloadPersonalizado(JSON.stringify({
+        evento: "BUG_REPORT_ALERT",
+        idIncidencia: "QA-BUG-1092",
+        severidad: "Crítica",
+        moduloAfectado: "SPEI / Core Transferencias",
+        descripcion: "Fallo en algoritmo de dígito verificador CLABE",
+        ambiente: "Staging / Pre-Producción",
+        reportadoPor: "Martin Hernandez (QA Lead)"
+      }, null, 2));
+    } else if (val === 'api-health') {
+      setTestEndpoint('https://automation.martin-qa.dev/webhook/v1/api-monitor');
+      setPayloadPersonalizado(JSON.stringify({
+        evento: "HEALTH_CHECK_MONITOR",
+        servicio: "API REST Pagos SPEI",
+        codigoRespuesta: 200,
+        latenciaMs: 46,
+        disponibilidad: "99.98%",
+        timestamp: new Date().toISOString()
+      }, null, 2));
+    }
+  };
+
+  // Disparo y animación del flujo n8n
+  const ejecutarTestFlujo = () => {
+    try {
+      JSON.parse(payloadPersonalizado);
+      setErrorJson('');
+    } catch {
+      setErrorJson('JSON inválido. Corrige la sintaxis antes de disparar el flujo.');
+      return;
+    }
+
+    setProbandoFlujo(true);
+    setNodoActivoIndex(0);
+
+    // Animación paso a paso de los nodos
+    setTimeout(() => setNodoActivoIndex(1), 250);
+    setTimeout(() => setNodoActivoIndex(2), 550);
+    setTimeout(() => {
+      setNodoActivoIndex(3);
+      
+      const parsed = JSON.parse(payloadPersonalizado);
+      const randomTime = Math.floor(Math.random() * 20 + 35);
+      const randomExec = `EXEC-N8N-${Math.floor(Math.random() * 89999 + 10000)}`;
+
+      setLogRespuesta({
+        status: 200,
+        mensaje: `Payload '${parsed.evento || 'EVENTO'}' procesado con éxito. Datos estructurados y alerta despachada.`,
+        tiempo: `${randomTime}ms`,
+        idEjecucion: randomExec,
+        datosSalida: {
+          statusProcesamiento: "COMPLETADO_OK",
+          payloadRecibido: parsed.evento || "DATOS_VALIDADOS",
+          correoDestinatario: "hegmtona2024@gmail.com",
+          idEjecucion: randomExec,
+          timestamp: new Date().toLocaleTimeString()
+        },
+        nodosEjecutados: [
+          { id: 1, nombre: '1. Webhook Receiver', tipo: 'n8n-nodes-base.webhook', estado: 'Exitoso (200)', latencia: '12ms' },
+          { id: 2, nombre: '2. Schema Validation', tipo: 'n8n-nodes-base.if', estado: 'Exitoso (Válido)', latencia: '9ms' },
+          { id: 3, nombre: '3. Data Transform & QA', tipo: 'n8n-nodes-base.set', estado: 'Exitoso (JSON)', latencia: '10ms' },
+          { id: 4, nombre: '4. Gmail & Alert Dispatch', tipo: 'n8n-nodes-base.emailSend', estado: 'Despachado', latencia: '8ms' }
+        ]
+      });
+
+      setProbandoFlujo(false);
+      setNodoActivoIndex(-1);
+    }, 900);
+  };
+
+  const descargarBlueprintN8N = () => {
+    const workflowJSON = {
+      name: `Workflow_n8n_${tipoEventoWebhook.toUpperCase()}_Oficial`,
+      nodes: [
+        { name: "Webhook Receiver", type: "n8n-nodes-base.webhook", parameters: { httpMethod: "POST", path: "contacto-portafolio" } },
+        { name: "Validate JSON Schema", type: "n8n-nodes-base.if", parameters: { conditions: { string: [{ value1: "={{ $json.evento }}", operation: "isNotEmpty" }] } } },
+        { name: "Transform & Enrich Data", type: "n8n-nodes-base.set", parameters: { values: { string: [{ name: "status", value: "PROCESADO_QA" }] } } },
+        { name: "Send Gmail & Alerts", type: "n8n-nodes-base.emailSend", parameters: { toEmail: "hegmtona2024@gmail.com" } }
+      ],
+      connections: {
+        "Webhook Receiver": { "main": [[{ "node": "Validate JSON Schema", "type": "main", "index": 0 }]] },
+        "Validate JSON Schema": { "main": [[{ "node": "Transform & Enrich Data", "type": "main", "index": 0 }]] },
+        "Transform & Enrich Data": { "main": [[{ "node": "Send Gmail & Alerts", "type": "main", "index": 0 }]] }
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(workflowJSON, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `n8n_Workflow_${tipoEventoWebhook.toUpperCase()}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // =========================================================================
+  // 1. GENERADOR DE MP
   // =========================================================================
   const [pasoMP, setPasoMP] = useState(1);
-  const [modoEntradaReq, setModoEntradaReq] = useState('subir'); // 'subir' | 'escribir' | 'ejemplos'
+  const [modoEntradaReq, setModoEntradaReq] = useState('subir');
   const [archivoSubido, setArchivoSubido] = useState(null);
   const [textoLibreReq, setTextoLibreReq] = useState('');
-  
   const [casoDetalleSeleccionado, setCasoDetalleSeleccionado] = useState(null);
   const [alertaSeguridad, setAlertaSeguridad] = useState(false);
   const [modalCotizador, setModalCotizador] = useState(false);
@@ -28,7 +191,6 @@ export default function AutomationsDemo({ onOpenContact }) {
 
   const [cotizacionEnviada, setCotizacionEnviada] = useState(false);
 
-  // Archivo 1: Estado del Requerimiento
   const [requerimiento, setRequerimiento] = useState({
     idHU: 'REQ-CLIENTE-01',
     titulo: 'Módulo de Transferencias Interbancarias SPEI en Tiempo Real',
@@ -42,14 +204,13 @@ export default function AutomationsDemo({ onOpenContact }) {
     ]
   });
 
-  // Manejador de subida de archivo
   const manejarSubidaArchivo = (e) => {
     const file = e.target.files[0];
     if (file) {
       setArchivoSubido(file.name);
       setRequerimiento({
         idHU: `DOC-${file.name.slice(0, 8).toUpperCase()}`,
-        titulo: `Requerimiento extraído de: ${file.name}`,
+        titulo: `Requerimiento: ${file.name}`,
         descripcion: `Especificación cargada desde archivo ${file.name}. Analizando estructura de historias de usuario y flujos transaccionales.`,
         origen: `Archivo adjunto (${(file.size / 1024).toFixed(1)} KB)`,
         criterios: [
@@ -62,12 +223,11 @@ export default function AutomationsDemo({ onOpenContact }) {
     }
   };
 
-  // Manejador de texto libre a grandes rasgos
   const procesarTextoLibre = () => {
     if (!textoLibreReq.trim()) return;
     setRequerimiento({
       idHU: 'REQ-PERSONALIZADO',
-      titulo: 'Requerimiento Funcional Personalizado del Cliente',
+      titulo: 'Requerimiento Funcional Personalizado',
       descripcion: textoLibreReq,
       origen: 'Descripción libre redactada por el cliente',
       criterios: [
@@ -80,15 +240,13 @@ export default function AutomationsDemo({ onOpenContact }) {
     setPasoMP(2);
   };
 
-  // Archivo 2: Formato de Matriz
   const [formatoMatriz, setFormatoMatriz] = useState({
     estandar: 'Jira / XRay Test Management',
     prefijoID: 'TC-CORE',
     columnas: ['ID Caso', 'Título del Escenario', 'Tipo de Prueba', 'Precondiciones', 'Pasos de Ejecución', 'Resultado Esperado', 'Prioridad', 'Estado']
   });
 
-  // Archivo 3: Suite Completa de Casos
-  const [matrizGenerada, setMatrizGenerada] = useState([
+  const [matrizGenerada] = useState([
     {
       id: 'TC-CORE-01',
       titulo: 'Ejecución exitosa del flujo principal con datos válidos y sesión activa',
@@ -189,7 +347,6 @@ export default function AutomationsDemo({ onOpenContact }) {
 
   const [procesandoMP, setProcesandoMP] = useState(false);
 
-  // Protección Anti-Copia en Visor MP
   useEffect(() => {
     const bloquearAtajos = (e) => {
       if (
@@ -236,7 +393,7 @@ export default function AutomationsDemo({ onOpenContact }) {
       contenidoCSV += `"${limpiar(c.id)}","${limpiar(c.titulo)}","${limpiar(c.tipo)}","${limpiar(c.categoriaMetrica)}","${limpiar(c.precondiciones)}","${limpiar(c.pasos)}","${limpiar(c.resultado)}","${limpiar(c.prioridad)}","${limpiar(c.estado)}"\n`;
     });
 
-    contenidoCSV += `"\n--- NOTA DE COBERTURA ---","Muestra ejecutiva de 5 casos basada en el requerimiento [${requerimiento.idHU}]. Para obtener la Matriz Completa (${totalCasos} casos, UAT y Automatizacion), contacta a Martin Hernandez Garfias (hegmtona2024@gmail.com / +52 56 1562 5182).","QA Engineering","","","","","",""\n`;
+    contenidoCSV += `"\n--- NOTA DE COBERTURA ---","Muestra ejecutiva de 5 casos basada en [${requerimiento.idHU}]. Para obtener la Matriz Completa (${totalCasos} casos), contacta a Martin Hernandez Garfias (hegmtona2024@gmail.com / +52 56 1562 5182).","QA Engineering","","","","","",""\n`;
 
     const blob = new Blob([contenidoCSV], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -255,10 +412,8 @@ export default function AutomationsDemo({ onOpenContact }) {
     if (datosCotizacion.tamanoModulo === 'chico') base = 1800;
     if (datosCotizacion.tamanoModulo === 'grande') base = 4200;
     if (datosCotizacion.tamanoModulo === 'enterprise') base = 6800;
-
     if (datosCotizacion.requiereAutomatizacion === 'si') base += 2000;
     if (datosCotizacion.tiempoEntrega === 'urgente') base += 1200;
-
     return base.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
   };
 
@@ -281,129 +436,7 @@ export default function AutomationsDemo({ onOpenContact }) {
     window.open(url, '_blank');
   };
 
-  // =========================================================================
-  // 2. ASISTENTE N8N / WEBHOOK PIPELINE
-  // =========================================================================
-  const [tipoEventoWebhook, setTipoEventoWebhook] = useState('lead');
-  const [testEndpoint, setTestEndpoint] = useState('https://automation.internal/webhook/v1/lead-dispatcher');
-  const [payloadPersonalizado, setPayloadPersonalizado] = useState(JSON.stringify({
-    evento: "NUEVO_LEAD_PORTAFOLIO",
-    origen: "Portafolio Web Oficial",
-    cliente: {
-      nombre: "Martin Tonatiuh Hernandez Garfias",
-      empresa: "Servicios de Automatización & QA",
-      email: "hegmtona2024@gmail.com",
-      telefono: "+52 56 1562 5182"
-    },
-    requerimiento: {
-      servicio: "QA Functional & Automation Suite",
-      prioridad: "Alta",
-      fechaSolicitud: new Date().toISOString()
-    }
-  }, null, 2));
-
-  const [nodoActivoIndex, setNodoActivoIndex] = useState(-1);
-  const [probandoFlujo, setProbandoFlujo] = useState(false);
-  const [logRespuesta, setLogRespuesta] = useState({
-    status: 200,
-    mensaje: 'Flujo listo para recibir eventos HTTP POST y procesar payloads JSON.',
-    tiempo: '38ms',
-    idEjecucion: 'EXEC-N8N-84920',
-    nodosEjecutados: [
-      { nombre: 'Webhook Receiver', estado: 'Listo', latencia: '12ms' },
-      { nombre: 'JSON Schema Validation', estado: 'Listo', latencia: '8ms' },
-      { nombre: 'Data Transform & Filter', estado: 'Listo', latencia: '11ms' },
-      { nombre: 'Gmail & WhatsApp Dispatch', estado: 'Listo', latencia: '7ms' }
-    ]
-  });
-
-  const cambiarPlantillaWebhook = (e) => {
-    const val = e.target.value;
-    setTipoEventoWebhook(val);
-    if (val === 'lead') {
-      setTestEndpoint('https://automation.internal/webhook/v1/lead-dispatcher');
-      setPayloadPersonalizado(JSON.stringify({
-        evento: "NUEVO_LEAD_PORTAFOLIO",
-        cliente: { nombre: "Martin Tonatiuh Hernandez Garfias", email: "hegmtona2024@gmail.com", telefono: "+52 56 1562 5182" },
-        servicio: "QA Functional & Automation Suite"
-      }, null, 2));
-    } else if (val === 'bug') {
-      setTestEndpoint('https://automation.internal/webhook/v1/jira-bug-sync');
-      setPayloadPersonalizado(JSON.stringify({
-        evento: "BUG_REPORT_ALERT",
-        idIncidencia: "QA-BUG-1092",
-        severidad: "Crítica",
-        moduloAfectado: "SPEI / Core Transferencias",
-        descripcion: "Fallo en algoritmo de dígito verificador CLABE",
-        ambiente: "Staging / Pre-Producción"
-      }, null, 2));
-    } else if (val === 'api-health') {
-      setTestEndpoint('https://automation.internal/webhook/v1/api-monitor');
-      setPayloadPersonalizado(JSON.stringify({
-        evento: "HEALTH_CHECK_MONITOR",
-        servicio: "API REST Pagos SPEI",
-        codigoRespuesta: 200,
-        latenciaMs: 46,
-        timestamp: new Date().toISOString()
-      }, null, 2));
-    }
-  };
-
-  const ejecutarTestFlujo = () => {
-    setProbandoFlujo(true);
-    setNodoActivoIndex(0);
-
-    const timer1 = setTimeout(() => setNodoActivoIndex(1), 250);
-    const timer2 = setTimeout(() => setNodoActivoIndex(2), 500);
-    const timer3 = setTimeout(() => {
-      setNodoActivoIndex(3);
-      setLogRespuesta({
-        status: 200,
-        mensaje: 'Payload JSON recibido, validado y procesado exitosamente por todos los nodos.',
-        tiempo: `${Math.floor(Math.random() * 20 + 35)}ms`,
-        idEjecucion: `EXEC-N8N-${Math.floor(Math.random() * 89999 + 10000)}`,
-        nodosEjecutados: [
-          { nombre: 'Webhook Receiver', estado: 'Exitoso', latencia: '12ms' },
-          { nombre: 'JSON Schema Validation', estado: 'Exitoso', latencia: '9ms' },
-          { nombre: 'Data Transform & Filter', estado: 'Exitoso', latencia: '10ms' },
-          { nombre: 'Gmail & WhatsApp Dispatch', estado: 'Exitoso', latencia: '8ms' }
-        ]
-      });
-      setProbandoFlujo(false);
-      setNodoActivoIndex(-1);
-    }, 850);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-    };
-  };
-
-  const descargarBlueprintN8N = () => {
-    const workflowJSON = {
-      name: `Workflow_n8n_${tipoEventoWebhook.toUpperCase()}_Oficial`,
-      nodes: [
-        { name: "Webhook", type: "n8n-nodes-base.webhook", parameters: { httpMethod: "POST", path: "contacto-portafolio" } },
-        { name: "Validate JSON", type: "n8n-nodes-base.if", parameters: { conditions: { string: [{ value1: "={{ $json.evento }}", operation: "isNotEmpty" }] } } },
-        { name: "Transform Data", type: "n8n-nodes-base.set", parameters: { values: { string: [{ name: "status", value: "PROCESADO_QA" }] } } },
-        { name: "Send Notification", type: "n8n-nodes-base.emailSend", parameters: { toEmail: "hegmtona2024@gmail.com" } }
-      ]
-    };
-
-    const blob = new Blob([JSON.stringify(workflowJSON, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `n8n_Workflow_Blueprint_${tipoEventoWebhook}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // =========================================================================
-  // 3. MONOGRAFÍAS (PAPELERÍA - 100% LIBRE Y DESCARGABLE)
-  // =========================================================================
+  // 3. MONOGRAFÍAS
   const [temaMonografia, setTemaMonografia] = useState('Las Hormigas y la Vida en Colonia');
   const [monografiaData, setMonografiaData] = useState({
     titulo: 'Monografía Escolar: Las Hormigas',
@@ -431,9 +464,7 @@ export default function AutomationsDemo({ onOpenContact }) {
     });
   };
 
-  // =========================================================================
-  // 4. BIOGRAFÍAS (PAPELERÍA - 100% LIBRE Y DESCARGABLE)
-  // =========================================================================
+  // 4. BIOGRAFÍAS
   const [personaje, setPersonaje] = useState('curie');
   const personajesDB = {
     curie: {
@@ -474,9 +505,7 @@ export default function AutomationsDemo({ onOpenContact }) {
     }
   };
 
-  // =========================================================================
-  // 5. ESQUEMAS (PAPELERÍA - 100% LIBRE Y DESCARGABLE)
-  // =========================================================================
+  // 5. ESQUEMAS
   const [especie, setEspecie] = useState('jaguar');
   const especiesDB = {
     jaguar: {
@@ -503,9 +532,7 @@ export default function AutomationsDemo({ onOpenContact }) {
     }
   };
 
-  // =========================================================================
-  // 6. MAPAS (PAPELERÍA - 100% LIBRE Y DESCARGABLE)
-  // =========================================================================
+  // 6. MAPAS
   const [regionMapa, setRegionMapa] = useState('mexico');
   const mapasDB = {
     edomex: {
@@ -541,7 +568,6 @@ export default function AutomationsDemo({ onOpenContact }) {
   return (
     <section id="automatizaciones" className="max-w-6xl mx-auto px-4 py-16 w-full relative scroll-mt-24">
       
-      {/* ALERTA VISUAL DE PROTECCIÓN CONTRA COPIA EN MATRIZ */}
       {alertaSeguridad && (
         <div className="fixed top-6 right-6 z-50 bg-rose-950/95 border border-rose-500 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-3 animate-bounce">
           <span className="text-xl">🛡️</span>
@@ -552,14 +578,12 @@ export default function AutomationsDemo({ onOpenContact }) {
         </div>
       )}
 
-      {/* MODAL DE AUTO-COTIZADOR INTELIGENTE */}
       {modalCotizador && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
           <div className="relative w-full max-w-lg bg-slate-900 border border-emerald-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
-            
             <button
               onClick={() => setModalCotizador(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition cursor-pointer"
             >
               ✕
             </button>
@@ -583,7 +607,7 @@ export default function AutomationsDemo({ onOpenContact }) {
                 </div>
                 <h4 className="text-base font-bold text-white">¡Solicitud de Matriz Despachada!</h4>
                 <p className="text-xs text-slate-300">
-                  Nos hemos puesto en contacto vía WhatsApp/Email para entregarte la matriz completa ({totalCasos} casos) con las suites de automatización.
+                  Nos pondremos en contacto vía WhatsApp/Email para entregarte la matriz completa ({totalCasos} casos) con las suites de automatización.
                 </p>
                 <button
                   onClick={() => {
@@ -597,7 +621,6 @@ export default function AutomationsDemo({ onOpenContact }) {
               </div>
             ) : (
               <form onSubmit={enviarCotizacion} className="space-y-3 text-xs">
-                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-300 font-semibold mb-1">Nombre Completo *</label>
@@ -610,7 +633,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
-
                   <div>
                     <label className="block text-slate-300 font-semibold mb-1">Empresa / Proyecto</label>
                     <input
@@ -635,7 +657,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
-
                   <div>
                     <label className="block text-slate-300 font-semibold mb-1">WhatsApp / Teléfono</label>
                     <input
@@ -662,7 +683,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                       <option value="enterprise">Suite Completa Core (50+ Casos)</option>
                     </select>
                   </div>
-
                   <div>
                     <label className="block text-slate-300 font-semibold mb-1">Automatización (Scripts)</label>
                     <select
@@ -679,11 +699,8 @@ export default function AutomationsDemo({ onOpenContact }) {
                 <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl flex items-center justify-between mt-2">
                   <div>
                     <p className="text-[11px] text-slate-400 font-semibold">Presupuesto Estimado:</p>
-                    <p className="text-xl font-extrabold text-emerald-400 font-mono">
-                      {calcularEstimacion()}
-                    </p>
+                    <p className="text-xl font-extrabold text-emerald-400 font-mono">{calcularEstimacion()}</p>
                   </div>
-
                   <span className="text-[10px] bg-slate-900 border border-slate-800 text-slate-400 px-2.5 py-1 rounded-lg">
                     Entrega personalizada
                   </span>
@@ -699,40 +716,39 @@ export default function AutomationsDemo({ onOpenContact }) {
                 </div>
               </form>
             )}
-
           </div>
         </div>
       )}
 
-      {/* Encabezado Principal */}
+      {/* Encabezado */}
       <div className="text-center max-w-2xl mx-auto mb-10">
         <div className="inline-flex items-center gap-2 bg-purple-950/80 border border-purple-500/40 px-3 py-1 rounded-full text-xs font-semibold text-purple-300 mb-3">
-          <span>⚡ Suite de Automatización & Papelería Digital</span>
+          <span>⚡ Suite de Automatización & QA Studio</span>
         </div>
         <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
           Generadores & Flujos Automatizados
         </h2>
         <p className="text-xs sm:text-sm text-slate-400 mt-2">
-          Genera matrices de prueba QA a partir de tus requerimientos o documentos, o descarga material educativo 100% libre en PDF.
+          Interactúa en vivo con workflows n8n, genera matrices de prueba QA a partir de requerimientos o descarga herramientas educativas en PDF.
         </p>
 
-        {/* Barra de 6 Pestañas */}
+        {/* 6 Pestañas */}
         <div className="flex flex-wrap justify-center gap-2 mt-6 p-2 bg-slate-950/90 border border-slate-800 rounded-3xl">
+          <button
+            onClick={() => setSeccionActiva('asistente')}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition cursor-pointer ${
+              seccionActiva === 'asistente' ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            1. 🤖 Flujo n8n / Webhook
+          </button>
           <button
             onClick={() => setSeccionActiva('matriz')}
             className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition cursor-pointer ${
               seccionActiva === 'matriz' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
             }`}
           >
-            1. 📋 Matriz QA (Cotizador)
-          </button>
-          <button
-            onClick={() => setSeccionActiva('asistente')}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition cursor-pointer ${
-              seccionActiva === 'asistente' ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            2. 🤖 Flujo n8n / Webhook
+            2. 📋 Matriz QA (Cotizador)
           </button>
           <button
             onClick={() => setSeccionActiva('monografias')}
@@ -773,12 +789,168 @@ export default function AutomationsDemo({ onOpenContact }) {
       <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm">
 
         {/* ========================================================================= */}
-        {/* 1. GENERADOR DE MP (ARCHIVO 1: SUBIR / ESCRIBIR A GRANDES RASGOS) */}
+        {/* 1. FLUJO N8N / WEBHOOKS EN VIVO (FUNCIONAL) */}
+        {/* ========================================================================= */}
+        {seccionActiva === 'asistente' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                  Módulo 1: Pipeline de Automatización n8n & Testing de Webhooks
+                </span>
+                <h3 className="text-lg sm:text-xl font-bold text-white mt-1">
+                  Orquestador de Eventos, Validación de Payloads & Notificaciones
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Simula peticiones HTTP POST en tiempo real, audita la ejecución nodo por nodo e inspecciona la salida JSON.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={tipoEventoWebhook}
+                  onChange={cambiarPlantillaWebhook}
+                  className="bg-slate-950 border border-slate-700 text-xs text-cyan-300 font-semibold px-3 py-2 rounded-xl focus:outline-none cursor-pointer"
+                >
+                  <option value="lead">📨 Evento: Captura de Lead / Cotización</option>
+                  <option value="bug">🐛 Evento: Reporte de Defecto QA (Jira)</option>
+                  <option value="api-health">🩺 Evento: Health-Check API SPEI</option>
+                </select>
+
+                <button
+                  onClick={descargarBlueprintN8N}
+                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>📥</span>
+                  <span>Descargar Blueprint (.JSON)</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* Panel Izquierdo: Configuración del Webhook */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Método & URL del Webhook:</label>
+                    <div className="flex gap-2">
+                      <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold px-2.5 py-1.5 rounded-lg text-xs">
+                        POST
+                      </span>
+                      <input
+                        type="text"
+                        value={testEndpoint}
+                        onChange={(e) => setTestEndpoint(e.target.value)}
+                        className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-cyan-300 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-slate-400 font-semibold">Cuerpo JSON (Editable):</label>
+                      <span className="text-[10px] text-slate-500 font-mono">Content-Type: application/json</span>
+                    </div>
+                    <textarea
+                      rows="8"
+                      value={payloadPersonalizado}
+                      onChange={(e) => setPayloadPersonalizado(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-200 focus:border-cyan-500 focus:outline-none resize-none leading-relaxed"
+                    ></textarea>
+                    {errorJson && (
+                      <p className="text-rose-400 text-[11px] font-semibold mt-1">⚠️ {errorJson}</p>
+                    )}
+                  </div>
+
+                  <div className="pt-1 flex gap-2">
+                    <button
+                      onClick={ejecutarTestFlujo}
+                      disabled={probandoFlujo}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-white font-bold text-xs rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <span>{probandoFlujo ? '⚙️' : '⚡'}</span>
+                      <span>{probandoFlujo ? 'Orquestando Nodos n8n...' : 'Disparar Webhook & Flujo en Vivo'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel Derecho: Diagrama de Nodos y Salida de Datos */}
+              <div className="lg:col-span-7 space-y-4">
+                
+                {/* Visualizador de Nodos */}
+                <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <span>🔗</span>
+                      <span>Secuencia de Nodos n8n en Ejecución</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                      ID: {logRespuesta.idEjecucion}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    {logRespuesta.nodosEjecutados.map((nodo, idx) => (
+                      <div
+                        key={nodo.id}
+                        className={`p-3 rounded-xl border transition-all duration-300 flex items-center justify-between ${
+                          nodoActivoIndex === idx
+                            ? 'bg-cyan-950 border-cyan-400 scale-[1.03] shadow-lg shadow-cyan-950/50'
+                            : 'bg-slate-900/90 border-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2.5 w-2.5 rounded-full ${
+                            nodoActivoIndex === idx ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400'
+                          }`}></span>
+                          <div>
+                            <p className="font-bold text-white text-[11px]">{nodo.nombre}</p>
+                            <p className="text-[10px] text-slate-400">{nodo.tipo}</p>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] font-mono font-bold text-emerald-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                          {nodo.estado}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Salida JSON y Log */}
+                <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl font-mono text-xs text-slate-300 space-y-2">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span className="text-emerald-400 font-bold text-[11px]">
+                      ✓ HTTP {logRespuesta.status} OK • Latencia: {logRespuesta.tiempo}
+                    </span>
+                    <span className="text-slate-500 text-[10px]">Trazabilidad Activa</span>
+                  </div>
+
+                  <p className="text-cyan-300 text-[11px] leading-relaxed">
+                    {logRespuesta.mensaje}
+                  </p>
+
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 text-[10px] text-slate-300 overflow-x-auto">
+                    <span className="text-slate-500 font-bold block mb-1">Payload de Respuesta (Data Output):</span>
+                    <pre className="text-emerald-300 font-mono">
+                      {JSON.stringify(logRespuesta.datosSalida, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* 2. MATRIZ QA */}
         {/* ========================================================================= */}
         {seccionActiva === 'matriz' && (
           <div className="space-y-6">
-            
-            {/* Navegación por los 3 Archivos */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-800 pb-5">
               <button
                 onClick={() => setPasoMP(1)}
@@ -820,11 +992,9 @@ export default function AutomationsDemo({ onOpenContact }) {
               </button>
             </div>
 
-            {/* FASE 1: SUBIR ARCHIVO O DESCRIBIR REQUERIMIENTO */}
+            {/* FASE 1 */}
             {pasoMP === 1 && (
               <div className="space-y-5 animate-fadeIn text-xs">
-                
-                {/* Selector de Modalidad */}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                   <div>
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
@@ -861,7 +1031,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                   </div>
                 </div>
 
-                {/* OPCIÓN 1: SUBIDA DE ARCHIVO */}
                 {modoEntradaReq === 'subir' && (
                   <div className="bg-slate-950/80 border-2 border-dashed border-slate-700 hover:border-emerald-500/60 rounded-2xl p-6 text-center space-y-3 transition">
                     <div className="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl mx-auto">
@@ -887,7 +1056,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                   </div>
                 )}
 
-                {/* OPCIÓN 2: ESCRIBIR A GRANDES RASGOS */}
                 {modoEntradaReq === 'escribir' && (
                   <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-3">
                     <div>
@@ -896,7 +1064,7 @@ export default function AutomationsDemo({ onOpenContact }) {
                       </label>
                       <textarea
                         rows="4"
-                        placeholder="Ejemplo: Necesito probar un módulo de login con autenticación de dos factores (2FA). Los usuarios deben recibir un código SMS de 6 dígitos que expira en 5 minutos. Tras 3 intentos fallidos, la cuenta debe bloquearse temporalmente..."
+                        placeholder="Ejemplo: Necesito probar un módulo de login con autenticación de dos factores (2FA). Los usuarios deben recibir un código SMS de 6 dígitos que expira en 5 minutos..."
                         value={textoLibreReq}
                         onChange={(e) => setTextoLibreReq(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-slate-200 placeholder-slate-500 focus:border-emerald-500 focus:outline-none resize-none leading-relaxed"
@@ -905,7 +1073,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                   </div>
                 )}
 
-                {/* OPCIÓN 3: EJEMPLO PRECONFIGURADO */}
                 {modoEntradaReq === 'ejemplos' && (
                   <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-3">
                     <label className="block text-slate-300 font-bold mb-1">Seleccionar Caso de Uso Empresarial:</label>
@@ -925,29 +1092,15 @@ export default function AutomationsDemo({ onOpenContact }) {
                               'Si el servicio bancario tarda más de 10 segundos, aplicar rollback automático de fondos.'
                             ]
                           });
-                        } else if (val === 'auth') {
-                          setRequerimiento({
-                            idHU: 'HU-AUTH-201',
-                            titulo: 'Autenticación con JWT, Bloqueo de Intentos y Sanitización',
-                            descripcion: 'Como usuario de la plataforma, deseo autenticarme con credenciales seguras para acceder a mi panel transaccional.',
-                            origen: 'Ejemplo Preconfigurado',
-                            criterios: [
-                              'Autenticación correcta genera token JWT HttpOnly con expiración en 60 minutos.',
-                              'Bloqueo de cuenta por 15 minutos tras 3 intentos fallidos consecutivos.',
-                              'Sanitización de caracteres especiales para prevenir inyección SQL.'
-                            ]
-                          });
                         }
                       }}
                       className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-300 font-semibold focus:outline-none cursor-pointer"
                     >
                       <option value="spei">🏦 Módulo SPEI / Transferencias Bancarias en Tiempo Real</option>
-                      <option value="auth">🔐 Módulo Autenticación, JWT & Bloqueo de Intentos</option>
                     </select>
                   </div>
                 )}
 
-                {/* Resumen del Requerimiento Procesado */}
                 <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between items-center border-b border-slate-800/80 pb-2">
                     <span className="font-bold text-white text-xs">{requerimiento.titulo}</span>
@@ -972,11 +1125,10 @@ export default function AutomationsDemo({ onOpenContact }) {
                     <span>➔</span>
                   </button>
                 </div>
-
               </div>
             )}
 
-            {/* FASE 2: FORMATO DE MATRIZ */}
+            {/* FASE 2 */}
             {pasoMP === 2 && (
               <div className="space-y-4 animate-fadeIn text-xs">
                 <div className="flex justify-between items-center">
@@ -1046,7 +1198,7 @@ export default function AutomationsDemo({ onOpenContact }) {
               </div>
             )}
 
-            {/* FASE 3: RESUMEN, VISOR SEGURO Y DESCARGA DE MUESTRA CON AUTO-COTIZADOR */}
+            {/* FASE 3 */}
             {pasoMP === 3 && (
               <div className="space-y-5 animate-fadeIn">
                 <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
@@ -1061,9 +1213,7 @@ export default function AutomationsDemo({ onOpenContact }) {
                       <span className="text-[11px] bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded font-mono">
                         🔒 Vista Protegida Anti-Copia
                       </span>
-                      <span className="text-[11px] text-cyan-400 font-mono">
-                        {requerimiento.idHU}
-                      </span>
+                      <span className="text-[11px] text-cyan-400 font-mono">{requerimiento.idHU}</span>
                     </div>
                   </div>
 
@@ -1072,22 +1222,18 @@ export default function AutomationsDemo({ onOpenContact }) {
                       <p className="text-[10px] uppercase font-bold text-slate-400">Casos Totales</p>
                       <p className="text-lg font-extrabold text-cyan-400 font-mono">{totalCasos}</p>
                     </div>
-
                     <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                       <p className="text-[10px] uppercase font-bold text-emerald-400">HP (Happy Path)</p>
                       <p className="text-lg font-extrabold text-emerald-400 font-mono">{totalHP}</p>
                     </div>
-
                     <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                       <p className="text-[10px] uppercase font-bold text-rose-400">TTF (Test to Fail)</p>
                       <p className="text-lg font-extrabold text-rose-400 font-mono">{totalTTF}</p>
                     </div>
-
                     <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
                       <p className="text-[10px] uppercase font-bold text-amber-400">Smoke / Sanity</p>
                       <p className="text-lg font-extrabold text-amber-400 font-mono">{totalSmoke}</p>
                     </div>
-
                     <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl col-span-2 sm:col-span-1">
                       <p className="text-[10px] uppercase font-bold text-purple-400">Seguridad / API</p>
                       <p className="text-lg font-extrabold text-purple-400 font-mono">{totalOtros}</p>
@@ -1166,12 +1312,8 @@ export default function AutomationsDemo({ onOpenContact }) {
                               casoDetalleSeleccionado?.id === caso.id ? 'bg-cyan-950/40 border-l-2 border-cyan-400' : ''
                             } ${index >= 5 ? 'opacity-80' : ''}`}
                           >
-                            <td className="py-3 px-3 font-mono font-bold text-cyan-400 whitespace-nowrap">
-                              {caso.id}
-                            </td>
-                            <td className="py-3 px-3 font-semibold text-white">
-                              {caso.titulo}
-                            </td>
+                            <td className="py-3 px-3 font-mono font-bold text-cyan-400 whitespace-nowrap">{caso.id}</td>
+                            <td className="py-3 px-3 font-semibold text-white">{caso.titulo}</td>
                             <td className="py-3 px-3 whitespace-nowrap">
                               <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                                 caso.categoriaMetrica === 'HP' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' :
@@ -1182,12 +1324,8 @@ export default function AutomationsDemo({ onOpenContact }) {
                                 {caso.categoriaMetrica}
                               </span>
                             </td>
-                            <td className="py-3 px-3 text-[11px] text-slate-400">
-                              {caso.precondiciones}
-                            </td>
-                            <td className="py-3 px-3 text-[11px] text-emerald-300">
-                              {caso.resultado}
-                            </td>
+                            <td className="py-3 px-3 text-[11px] text-slate-400">{caso.precondiciones}</td>
+                            <td className="py-3 px-3 text-[11px] text-emerald-300">{caso.resultado}</td>
                             <td className="py-3 px-2 text-center">
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 caso.prioridad === 'Crítica' ? 'bg-rose-950 text-rose-300 border border-rose-800' :
@@ -1222,9 +1360,7 @@ export default function AutomationsDemo({ onOpenContact }) {
                             {casoDetalleSeleccionado.id}
                           </span>
                           <div>
-                            <h4 className="text-sm font-bold text-white">
-                              {casoDetalleSeleccionado.titulo}
-                            </h4>
+                            <h4 className="text-sm font-bold text-white">{casoDetalleSeleccionado.titulo}</h4>
                             <p className="text-[11px] text-slate-400">
                               {casoDetalleSeleccionado.tipo} • Prioridad: <strong className="text-amber-400">{casoDetalleSeleccionado.prioridad}</strong> • Estado: <strong className="text-emerald-400">{casoDetalleSeleccionado.estado}</strong>
                             </p>
@@ -1246,7 +1382,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                             <span className="font-bold text-slate-300 block mb-1">🎯 Precondiciones:</span>
                             <p className="text-slate-400 leading-relaxed">{casoDetalleSeleccionado.precondiciones}</p>
                           </div>
-
                           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
                             <span className="font-bold text-cyan-300 block mb-1">🧪 Datos de Prueba (Test Data):</span>
                             <p className="text-slate-400 font-mono text-[11px] leading-relaxed">{casoDetalleSeleccionado.datosPrueba}</p>
@@ -1260,7 +1395,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                               {casoDetalleSeleccionado.pasos}
                             </pre>
                           </div>
-
                           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
                             <span className="font-bold text-emerald-400 block mb-1">✅ Resultado Esperado:</span>
                             <p className="text-emerald-300 leading-relaxed">{casoDetalleSeleccionado.resultado}</p>
@@ -1285,170 +1419,17 @@ export default function AutomationsDemo({ onOpenContact }) {
                 </div>
               </div>
             )}
-
           </div>
         )}
 
-        {/* PESTAÑAS 2 A 6 */}
-        {seccionActiva === 'asistente' && (
-          <div className="space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div>
-                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                  Módulo 2: Orquestación de Flujos n8n & Testing de Webhooks
-                </span>
-                <h3 className="text-lg sm:text-xl font-bold text-white mt-1">
-                  Pipeline de Automatización, Validación de Schemas & Despacho
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Simulador interactivo de endpoints REST y workflows n8n para QA e integración de servicios.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  value={tipoEventoWebhook}
-                  onChange={cambiarPlantillaWebhook}
-                  className="bg-slate-950 border border-slate-700 text-xs text-cyan-300 font-semibold px-3 py-2 rounded-xl focus:outline-none cursor-pointer"
-                >
-                  <option value="lead">📨 Evento: Captura de Lead</option>
-                  <option value="bug">🐛 Evento: Reporte de Defecto QA (Jira)</option>
-                  <option value="api-health">🩺 Evento: Health-Check API SPEI</option>
-                </select>
-
-                <button
-                  onClick={descargarBlueprintN8N}
-                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
-                >
-                  <span>📥</span>
-                  <span>Descargar Workflow n8n (.JSON)</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-5 space-y-4">
-                <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-3 text-xs">
-                  <div>
-                    <label className="block text-slate-400 font-semibold mb-1">Método & Endpoint HTTP POST:</label>
-                    <div className="flex gap-2">
-                      <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold px-2.5 py-1.5 rounded-lg text-xs">
-                        POST
-                      </span>
-                      <input
-                        type="text"
-                        value={testEndpoint}
-                        onChange={(e) => setTestEndpoint(e.target.value)}
-                        className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-cyan-300 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="text-slate-400 font-semibold">Payload JSON (Cuerpo de la Petición):</label>
-                      <span className="text-[10px] text-slate-500 font-mono">application/json</span>
-                    </div>
-                    <textarea
-                      rows="7"
-                      value={payloadPersonalizado}
-                      onChange={(e) => setPayloadPersonalizado(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-200 focus:border-cyan-500 focus:outline-none resize-none leading-relaxed"
-                    ></textarea>
-                  </div>
-
-                  <div className="pt-1 flex gap-2">
-                    <button
-                      onClick={ejecutarTestFlujo}
-                      disabled={probandoFlujo}
-                      className="flex-1 py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-white font-bold text-xs rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <span>{probandoFlujo ? '⚙️' : '⚡'}</span>
-                      <span>{probandoFlujo ? 'Ejecutando Nodos...' : 'Disparar Webhook & Flujo'}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="lg:col-span-7 space-y-4">
-                <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-3">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                      <span>🔗</span>
-                      <span>Orquestador de Nodos n8n en Tiempo Real</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
-                      ID: {logRespuesta.idEjecucion}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                    {logRespuesta.nodosEjecutados.map((nodo, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-3 rounded-xl border transition-all duration-300 flex items-center justify-between ${
-                          nodoActivoIndex === idx
-                            ? 'bg-cyan-950 border-cyan-400 scale-[1.02] shadow-lg shadow-cyan-950/50'
-                            : 'bg-slate-900/90 border-slate-800'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`h-2.5 w-2.5 rounded-full ${
-                            nodoActivoIndex === idx ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400'
-                          }`}></span>
-                          <div>
-                            <p className="font-bold text-white text-[11px]">{nodo.nombre}</p>
-                            <p className="text-[10px] text-slate-400">Latencia: {nodo.latencia}</p>
-                          </div>
-                        </div>
-
-                        <span className="text-[10px] font-mono font-bold text-emerald-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                          {nodo.estado}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl font-mono text-xs text-slate-300 space-y-2">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span className="text-emerald-400 font-bold text-[11px]">
-                      ✓ HTTP {logRespuesta.status} OK • Tiempo Total: {logRespuesta.tiempo}
-                    </span>
-                    <span className="text-slate-500 text-[10px]">Formato: JSON Validado</span>
-                  </div>
-
-                  <p className="text-cyan-300 text-[11px] leading-relaxed">
-                    {logRespuesta.mensaje}
-                  </p>
-
-                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800/80 text-[10px] text-slate-400 flex items-center justify-between">
-                    <span>💡 Puedes importar el blueprint descargable directamente en tu instancia de n8n.</span>
-                    <button
-                      onClick={onOpenContact}
-                      className="text-cyan-400 hover:text-cyan-300 font-bold underline cursor-pointer"
-                    >
-                      Integrar con mi sistema →
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
+        {/* 3. MONOGRAFÍAS */}
         {seccionActiva === 'monografias' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-4 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                  Módulo 3: Monografías Escolares
-                </span>
-                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-bold">
-                  ✓ Descarga Libre
-                </span>
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Módulo 3: Monografías</span>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-bold">✓ Descarga Libre</span>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Tema a Investigar:</label>
                 <input
@@ -1459,14 +1440,12 @@ export default function AutomationsDemo({ onOpenContact }) {
                   placeholder="Ej. Las Hormigas, El Colibrí..."
                 />
               </div>
-
               <button
                 onClick={generarMonografia}
                 className="w-full py-2.5 px-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
               >
                 ⚡ Generar Ficha de Monografía
               </button>
-
               <button
                 onClick={imprimirVistaLibre}
                 className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
@@ -1485,9 +1464,7 @@ export default function AutomationsDemo({ onOpenContact }) {
               <div>
                 <strong className="text-emerald-400">Puntos Clave & Características:</strong>
                 <ul className="list-disc list-inside text-slate-400 mt-1 space-y-1">
-                  {monografiaData.caracteristicas.map((c, i) => (
-                    <li key={i}>{c}</li>
-                  ))}
+                  {monografiaData.caracteristicas.map((c, i) => <li key={i}>{c}</li>)}
                 </ul>
               </div>
               <p className="text-slate-300"><strong className="text-amber-400">Hábitat / Contexto:</strong> {monografiaData.habitat}</p>
@@ -1498,18 +1475,14 @@ export default function AutomationsDemo({ onOpenContact }) {
           </div>
         )}
 
+        {/* 4. BIOGRAFÍAS */}
         {seccionActiva === 'biografias' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-4 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">
-                  Módulo 4: Fichas Biográficas
-                </span>
-                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-bold">
-                  ✓ Descarga Libre
-                </span>
+                <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Módulo 4: Fichas Biográficas</span>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-bold">✓ Descarga Libre</span>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Seleccionar Personaje:</label>
                 <select
@@ -1522,7 +1495,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                   <option value="juarez">Benito Juárez (Historia de México / Leyes)</option>
                 </select>
               </div>
-
               <button
                 onClick={imprimirVistaLibre}
                 className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
@@ -1544,9 +1516,7 @@ export default function AutomationsDemo({ onOpenContact }) {
               <div>
                 <strong className="text-purple-300">Aportaciones Principales:</strong>
                 <ul className="list-disc list-inside text-slate-400 mt-1 space-y-1">
-                  {personajesDB[personaje].aportes.map((ap, i) => (
-                    <li key={i}>{ap}</li>
-                  ))}
+                  {personajesDB[personaje].aportes.map((ap, i) => <li key={i}>{ap}</li>)}
                 </ul>
               </div>
               <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-slate-300">
@@ -1556,18 +1526,14 @@ export default function AutomationsDemo({ onOpenContact }) {
           </div>
         )}
 
+        {/* 5. ESQUEMAS */}
         {seccionActiva === 'esquemas' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-4 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                  Módulo 5: Esquemas Anatómicos
-                </span>
-                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-bold">
-                  ✓ Descarga Libre
-                </span>
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Módulo 5: Esquemas Anatómicos</span>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-bold">✓ Descarga Libre</span>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Especie:</label>
                 <select
@@ -1579,12 +1545,10 @@ export default function AutomationsDemo({ onOpenContact }) {
                   <option value="girasol">🌻 Girasol Gigante (Flora)</option>
                 </select>
               </div>
-
               <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
                 <p><strong className="text-slate-200">Científico:</strong> <em>{especiesDB[especie].cientifico}</em></p>
                 <p><strong className="text-slate-200">Clasificación:</strong> {especiesDB[especie].reino}</p>
               </div>
-
               <button
                 onClick={imprimirVistaLibre}
                 className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
@@ -1610,18 +1574,14 @@ export default function AutomationsDemo({ onOpenContact }) {
           </div>
         )}
 
+        {/* 6. MAPAS */}
         {seccionActiva === 'mapas' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-4 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                  Módulo 6: Geografía & Cartografía
-                </span>
-                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-bold">
-                  ✓ Descarga Libre
-                </span>
+                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Módulo 6: Geografía & Cartografía</span>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-bold">✓ Descarga Libre</span>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Escala Cartográfica:</label>
                 <select
@@ -1634,7 +1594,6 @@ export default function AutomationsDemo({ onOpenContact }) {
                   <option value="mundo">🌍 Planisferio Mundial (Global)</option>
                 </select>
               </div>
-
               <button
                 onClick={imprimirVistaLibre}
                 className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
@@ -1651,7 +1610,7 @@ export default function AutomationsDemo({ onOpenContact }) {
               </div>
               <p className="text-slate-300"><strong className="text-slate-100">División Territorial:</strong> {mapasDB[regionMapa].division}</p>
               <p className="text-slate-300"><strong className="text-cyan-300">🏔️ Orografía & Relieve:</strong> {mapasDB[regionMapa].orografia}</p>
-              <p className="text-slate-300"><strong className="text-blue-400">🌊 Hidrografía (Ríos y Cuencas):</strong> {mapasDB[regionMapa].hidrografia}</p>
+              <p className="text-slate-300"><strong className="text-blue-400">🌊 Hidrografía:</strong> {mapasDB[regionMapa].hidrografia}</p>
               <p className="text-slate-300"><strong className="text-emerald-400">☀️ Regímenes Climáticos:</strong> {mapasDB[regionMapa].clima}</p>
             </div>
           </div>
@@ -1661,4 +1620,3 @@ export default function AutomationsDemo({ onOpenContact }) {
     </section>
   );
 }
-
