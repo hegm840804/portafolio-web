@@ -4,10 +4,10 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [pestanaActiva, setPestanaActiva] = useState('matriz'); // 'matriz' | 'n8n'
 
   // =========================================================================
-  // 1. GENERADOR DE MATRIZ CON FLUJO DE 3 PASOS Y SELECTOR DE NIVEL (JR, MED, SR)
+  // 1. GENERADOR DE MATRIZ CON NIVEL FIJO "MED" (SEMI-SENIOR ~75 CASOS)
   // =========================================================================
   const [pasoMP, setPasoMP] = useState(1);
-  const [nivelSeleccionado, setNivelSeleccionado] = useState('senior'); // 'junior' | 'semi' | 'senior'
+  const nivelSeleccionado = 'semi'; // Fijo en Semi-Senior (Med)
 
   // ARCHIVO 1: REQUERIMIENTOS
   const [archivoReqNombre, setArchivoReqNombre] = useState(null);
@@ -89,28 +89,22 @@ export default function QASuiteStudio({ onOpenContact }) {
     }
   };
 
-  // GENERADOR DINÁMICO SEGÚN NIVEL (JR: 30 casos | MED: 75 casos | SR: 120 casos)
-  const generarSuitePorNivel = (prefijo, nivel) => {
-    let totalCasos = 30;
-    if (nivel === 'semi') totalCasos = 75;
-    if (nivel === 'senior') totalCasos = 120;
-
+  // GENERADOR DE SUITE ESTÁNDAR MED (~75 CASOS)
+  const generarSuiteMed = (prefijo) => {
+    const totalCasos = 75; // Nivel Semi-Senior estándar
     const areas = [
-      { code: 'HP', name: 'Happy Path' },
-      { code: 'TTF', name: 'Test to Fail / Frontera' },
-      { code: 'SMK', name: 'Smoke Test' },
-      { code: 'CON', name: 'Concurrencia' },
-      { code: 'SEC', name: 'Seguridad (XSS/SQLi)' },
-      { code: 'RES', name: 'Resiliencia / Rollback' },
-      { code: 'SQL', name: 'Auditoría SQL' }
-    ];
+      { code: 'HP', name: 'Happy Path', casos: 15 },
+      { code: 'TTF', name: 'Test to Fail / Frontera', casos: 15 },
+      { code: 'SMK', name: 'Smoke Test', casos: 10 },
+      { code: 'CON', name: 'Concurrencia', casos: 10 },
+      { code: 'SEC', name: 'Seguridad (XSS/SQLi)', casos: 10 },
+      { code: 'RES', name: 'Resiliencia / Rollback', casos: 8 },
+      { code: 'SQL', name: 'Auditoría SQL', casos: 7 }
+    ]; // Suma exacta = 75 casos
 
     let suite = [];
-    let casosPorArea = Math.ceil(totalCasos / areas.length);
-
-    areas.forEach((seccion, sIdx) => {
-      const limite = (sIdx === areas.length - 1) ? (totalCasos - suite.length) : casosPorArea;
-      for (let i = 1; i <= limite; i++) {
+    areas.forEach(seccion => {
+      for (let i = 1; i <= seccion.casos; i++) {
         const idCaso = `TC-${prefijo}-${seccion.code}-${String(i).padStart(2, '0')}`;
         suite.push({
           id: idCaso,
@@ -127,7 +121,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             'Modulo_Core': `${prefijo} / Módulo ${seccion.name}`,
             'Requerimiento_Asociado': requerimiento.idHU,
             'Descripcion_Escenario': `Validación (${seccion.name}) #${i} basada en la especificación del requerimiento ${requerimiento.idHU}.`,
-            'Tipo_Validacion': `QA ${nivel.toUpperCase()} - ${seccion.name}`,
+            'Tipo_Validacion': `QA Med (Semi-Senior) - ${seccion.name}`,
             'Precondiciones': `Servicios core activos y parámetros cargados para ${idCaso}.`,
             'Pasos_Detallados': `1. Configurar datos ${i}.\n2. Ejecutar transacción.\n3. Validar BD.`,
             'Valores_Entrada_TestData': `Dataset_${seccion.code}_${i}`,
@@ -141,9 +135,9 @@ export default function QASuiteStudio({ onOpenContact }) {
     return suite;
   };
 
-  const suiteCompleta = generarSuitePorNivel(requerimiento.prefijoID, nivelSeleccionado);
+  const suiteCompleta = generarSuiteMed(requerimiento.prefijoID);
 
-  // DESGLOSE POR SECCIÓN PARA LA TABLITA DE MÉTRICAS
+  // DESGLOSE EXACTO POR SECCIÓN PARA LA TABLITA DE MÉTRICAS
   const resumenSecciones = [
     { codigo: 'HP', nombre: 'Happy Path', total: suiteCompleta.filter(c => c.categoriaMetrica === 'HP').length },
     { codigo: 'TTF', nombre: 'Test to Fail / Frontera', total: suiteCompleta.filter(c => c.categoriaMetrica === 'TTF').length },
@@ -213,9 +207,8 @@ export default function QASuiteStudio({ onOpenContact }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Suite_QA_${requerimiento.prefijoID}_${nivelSeleccionado.toUpperCase()}_${suiteCompleta.length}_Casos.csv`;
+    link.download = `Suite_QA_${requerimiento.prefijoID}_MED_${suiteCompleta.length}_Casos.csv`;
     link.click();
-    setModalCotizador(true);
   };
 
   // =========================================================================
@@ -494,7 +487,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             )}
           >
             <span>📋</span>
-            <span>1. Generador de Matriz QA ({suiteCompleta.length} Casos Trazables)</span>
+            <span>1. Generador de Matriz QA ({suiteCompleta.length} Casos Med)</span>
           </button>
 
           <button
@@ -554,9 +547,9 @@ export default function QASuiteStudio({ onOpenContact }) {
               >
                 <div className="flex items-center gap-2">
                   <span className="h-6 w-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-mono text-xs font-bold">3</span>
-                  <span className="text-xs font-bold">Archivo 3: Suite QA & Métricas</span>
+                  <span className="text-xs font-bold">Archivo 3: Suite Med & Métricas</span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">Niveles Jr, Med, Sr & CSV UTF-8</p>
+                <p className="text-[11px] text-slate-400 mt-1">Perfil Semi-Senior & CSV UTF-8</p>
               </button>
             </div>
 
@@ -696,82 +689,41 @@ export default function QASuiteStudio({ onOpenContact }) {
                     onClick={() => setPasoMP(3)}
                     className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer"
                   >
-                    <span>⚡ Generar Suite QA ({suiteCompleta.length} Casos Trazables)</span>
+                    <span>⚡ Generar Suite QA Med ({suiteCompleta.length} Casos)</span>
                     <span>➔</span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* FASE 3: SUITE QA CON PANEL DE NIVELES (JR, MED, SR) Y TABLITA DE RESUMEN */}
+            {/* FASE 3: SUITE QA CON TARJETA FIJA MED Y TABLITA CON NÚMERO EXACTO DE CASOS POR MÉTRICA */}
             {pasoMP === 3 && (
               <div className="space-y-6">
                 
-                {/* NUEVO APARTADO: SELECTOR DE PERFIL QA (JR, MED, SR) */}
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-3">
+                {/* TARJETA FIJA DE PERFIL MED (SEMI-SENIOR) */}
+                <div className="bg-slate-950 border border-amber-500/60 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">⚡</span>
                     <div>
-                      <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">
-                        ⚙️ Selector de Nivel de Cobertura QA
-                      </span>
-                      <p className="text-[11px] text-slate-400">
-                        Selecciona el perfil de profundidad para ajustar la cantidad de casos generados:
+                      <h4 className="text-sm font-bold text-white uppercase tracking-wide">
+                        Perfil Seleccionado: Semi-Senior (Med)
+                      </h4>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        Métrica: <strong>~75 casos</strong>. Cobertura robusta de fronteras, smoke y flujos alternos.
                       </p>
-                    </div>
-
-                    <div className="inline-flex p-1 bg-slate-900 border border-slate-800 rounded-xl">
-                      <button
-                        onClick={() => { setNivelSeleccionado('junior'); setPagina(1); }}
-                        className={'px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ' + (
-                          nivelSeleccionado === 'junior' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                        )}
-                      >
-                        🌱 Jr (30 Casos)
-                      </button>
-                      <button
-                        onClick={() => { setNivelSeleccionado('semi'); setPagina(1); }}
-                        className={'px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ' + (
-                          nivelSeleccionado === 'semi' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                        )}
-                      >
-                        ⚡ Med (75 Casos)
-                      </button>
-                      <button
-                        onClick={() => { setNivelSeleccionado('senior'); setPagina(1); }}
-                        className={'px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ' + (
-                          nivelSeleccionado === 'senior' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                        )}
-                      >
-                        🚀 Sr (120 Casos)
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className={'p-3 rounded-xl border transition ' + (nivelSeleccionado === 'junior' ? 'bg-cyan-950/40 border-cyan-500' : 'bg-slate-900 border-slate-800 text-slate-400')}>
-                      <p className="font-bold text-white">🌱 Junior (Jr)</p>
-                      <p className="text-[11px] mt-1">Métrica: ~30 casos. Enfoque en Happy Path y validaciones funcionales esenciales.</p>
-                    </div>
-                    <div className={'p-3 rounded-xl border transition ' + (nivelSeleccionado === 'semi' ? 'bg-amber-950/40 border-amber-500' : 'bg-slate-900 border-slate-800 text-slate-400')}>
-                      <p className="font-bold text-white">⚡ Semi-Senior (Med)</p>
-                      <p className="text-[11px] mt-1">Métrica: ~75 casos. Cobertura robusta de fronteras, smoke y flujos alternos.</p>
-                    </div>
-                    <div className={'p-3 rounded-xl border transition ' + (nivelSeleccionado === 'senior' ? 'bg-emerald-950/40 border-emerald-500' : 'bg-slate-900 border-slate-800 text-slate-400')}>
-                      <p className="font-bold text-white">🚀 Senior / Lead (Sr)</p>
-                      <p className="text-[11px] mt-1">Métrica: 120+ casos. Suite exhaustiva con Seguridad, Resiliencia y Auditoría SQL.</p>
                     </div>
                   </div>
                 </div>
 
-                {/* TABLITA DE RESUMEN DE COBERTURA & DISTRIBUCIÓN POR SECCIÓN */}
+                {/* TABLITA DE RESUMEN CON EL NÚMERO EXACTO DE CASOS POR MÉTRICA */}
                 <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-3">
                     <div>
                       <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
-                        📊 RESUMEN DE COBERTURA & DISTRIBUCIÓN POR SECCIÓN
+                        📊 RESUMEN DE COBERTURA & NÚMERO DE CASOS POR MÉTRICA (MED)
                       </span>
                       <p className="text-[11px] text-slate-400">
-                        Total de casos generados para el requerimiento <strong className="text-white">{requerimiento.idHU}</strong> con prefijo <strong className="text-cyan-400">[{requerimiento.prefijoID}]</strong>:
+                        Desglose exacto de los casos generados para el requerimiento <strong className="text-white">{requerimiento.idHU}</strong>:
                       </p>
                     </div>
                     <div className="bg-emerald-950 text-emerald-300 border border-emerald-800 px-3 py-1.5 rounded-xl font-mono text-sm font-extrabold text-center">
@@ -783,7 +735,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                     {resumenSecciones.map((sec) => (
                       <div key={sec.codigo} className="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-1">
                         <p className="text-[10px] uppercase font-bold text-slate-400">{sec.nombre}</p>
-                        <p className="text-lg font-extrabold text-cyan-400 font-mono">{sec.total}</p>
+                        <p className="text-lg font-extrabold text-emerald-400 font-mono">{sec.total} Casos</p>
                         <span className="text-[9px] text-slate-500 font-mono block">Código: {sec.codigo}</span>
                       </div>
                     ))}
@@ -804,7 +756,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                       className="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-600 text-xs font-bold px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5"
                     >
                       <span>📥</span>
-                      <span>Exportar Suite ({suiteCompleta.length} Casos CSV UTF-8)</span>
+                      <span>Exportar Suite Med ({suiteCompleta.length} Casos CSV UTF-8)</span>
                     </button>
                   </div>
                 </div>
@@ -816,7 +768,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                       <tr className="border-b border-slate-800 text-slate-400 font-bold bg-slate-950 uppercase text-[10px] tracking-wider">
                         <th className="py-3 px-3">ID Caso (Trazable)</th>
                         <th className="py-3 px-3">Escenario Técnico</th>
-                        <th className="py-3 px-3">Sección / Área</th>
+                        <th className="py-3 px-3">Métrica / Sección</th>
                         <th className="py-3 px-3">Precondiciones</th>
                         <th className="py-3 px-2 text-center">Severidad</th>
                         <th className="py-3 px-2 text-center">Test Runner</th>
@@ -832,7 +784,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
                             <span className="bg-slate-950 text-slate-300 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">
-                              {caso.categoriaMetrica}
+                              {caso.seccionNombre}
                             </span>
                           </td>
                           <td className="py-3 px-3 text-[11px] text-slate-400 max-w-xs truncate">{caso.valores.Precondiciones}</td>
