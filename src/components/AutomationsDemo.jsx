@@ -539,7 +539,7 @@ export default function AutomationsDemo({ onOpenContact }) {
   };
 
   return (
-    <section id="automatizaciones" className="max-w-6xl mx-auto px-4 py-16 w-full relative">
+    <section id="automatizaciones" className="max-w-6xl mx-auto px-4 py-16 w-full relative scroll-mt-24">
       
       {/* ALERTA VISUAL DE PROTECCIÓN CONTRA COPIA EN MATRIZ */}
       {alertaSeguridad && (
@@ -1661,3 +1661,4 @@ export default function AutomationsDemo({ onOpenContact }) {
     </section>
   );
 }
+
