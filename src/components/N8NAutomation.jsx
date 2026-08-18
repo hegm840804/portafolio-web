@@ -105,12 +105,12 @@ export default function N8NAutomation({ onOpenContact }) {
       setNodoActivoIndex(3);
       const parsed = JSON.parse(payloadJson);
       const randomLat = Math.floor(Math.random() * 15 + 32);
-      const randomExec = EXEC-N8N-;
+      const randomExec = 'EXEC-N8N-' + Math.floor(Math.random() * 89999 + 10000);
 
       setLogSalida({
         status: 200,
-        mensaje: Evento '' procesado exitosamente por la canalización.,
-        tiempoTotal: ${randomLat}ms,
+        mensaje: "Evento '" + (parsed.evento || 'HTTP_EVENT') + "' procesado exitosamente por la canalización.",
+        tiempoTotal: randomLat + 'ms',
         idEjecucion: randomExec,
         datosResultado: {
           statusProcesamiento: "COMPLETADO_OK",
@@ -134,10 +134,10 @@ export default function N8NAutomation({ onOpenContact }) {
 
   const descargarBlueprint = () => {
     const workflowJSON = {
-      name: Workflow_n8n__Oficial,
+      name: "Workflow_n8n_" + tipoEvento.toUpperCase() + "_Oficial",
       nodes: [
         { name: "Webhook Receiver", type: "n8n-nodes-base.webhook", parameters: { httpMethod: "POST", path: "contacto-portafolio" } },
-        { name: "Validate Schema", type: "n8n-nodes-base.if", parameters: { conditions: { string: [{ value1: "={{ .evento }}", operation: "isNotEmpty" }] } } },
+        { name: "Validate Schema", type: "n8n-nodes-base.if", parameters: { conditions: { string: [{ value1: "={{ $json.evento }}", operation: "isNotEmpty" }] } } },
         { name: "Transform QA Data", type: "n8n-nodes-base.set", parameters: { values: { string: [{ name: "status", value: "PROCESADO_QA" }] } } },
         { name: "Send Alerts & Gmail", type: "n8n-nodes-base.emailSend", parameters: { toEmail: "hegmtona2024@gmail.com" } }
       ]
@@ -147,8 +147,7 @@ export default function N8NAutomation({ onOpenContact }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 
-8n_Workflow_.json);
+    link.setAttribute('download', "n8n_Workflow_" + tipoEvento.toUpperCase() + ".json");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -261,10 +260,16 @@ export default function N8NAutomation({ onOpenContact }) {
                 {logSalida.nodos.map((nodo, idx) => (
                   <div
                     key={nodo.id}
-                    className={p-3 rounded-xl border transition-all duration-300 flex items-center justify-between }
+                    className={'p-3 rounded-xl border transition-all duration-300 flex items-center justify-between ' + (
+                      nodoActivoIndex === idx
+                        ? 'bg-cyan-950 border-cyan-400 scale-[1.03] shadow-lg shadow-cyan-950/50'
+                        : 'bg-slate-900 border-slate-800'
+                    )}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={h-2.5 w-2.5 rounded-full }></span>
+                      <span className={'h-2.5 w-2.5 rounded-full ' + (
+                        nodoActivoIndex === idx ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400'
+                      )}></span>
                       <div>
                         <p className="font-bold text-white text-[11px]">{nodo.nombre}</p>
                         <p className="text-[10px] text-slate-400">{nodo.tipo}</p>
