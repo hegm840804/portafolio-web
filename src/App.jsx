@@ -3,7 +3,7 @@ import Navbar from './components/Navbar'
 import HeroCarousel from './components/HeroCarousel'
 import ServiceTabs from './components/ServiceTabs'
 import Projects from './components/Projects'
-import N8NAutomation from './components/N8NAutomation'
+import QASuiteStudio from './components/QASuiteStudio'
 import TechStack from './components/TechStack'
 import About from './components/About'
 import FloatingCTA from './components/FloatingCTA'
@@ -32,8 +32,8 @@ export default function App() {
 
         <Projects />
 
-        {/* Sección n8n Interactiva */}
-        <N8NAutomation onOpenContact={() => setModalContactoAbierto(true)} />
+        {/* Suite de QA & n8n Interactiva */}
+        <QASuiteStudio onOpenContact={() => setModalContactoAbierto(true)} />
 
         <TechStack />
 
