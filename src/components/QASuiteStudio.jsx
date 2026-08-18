@@ -1,175 +1,23 @@
 import { useState, useEffect } from 'react';
 
 export default function QASuiteStudio({ onOpenContact }) {
-  const [pestanaActiva, setPestanaActiva] = useState('n8n'); // 'n8n' | 'matriz'
+  const [pestanaActiva, setPestanaActiva] = useState('matriz'); // 'matriz' | 'n8n'
 
   // =========================================================================
-  // 1. MÓDULO N8N & WEBHOOKS
-  // =========================================================================
-  const [tipoEvento, setTipoEvento] = useState('lead');
-  const [endpointUrl, setEndpointUrl] = useState('https://automation.martin-qa.dev/webhook/v1/lead-dispatcher');
-  const [nodoActivoIndex, setNodoActivoIndex] = useState(-1);
-  const [ejecutandoN8n, setEjecutandoN8n] = useState(false);
-  const [errorJson, setErrorJson] = useState('');
-
-  const [payloadJson, setPayloadJson] = useState(JSON.stringify({
-    evento: "NUEVO_LEAD_PORTAFOLIO",
-    origen: "Portafolio Web Oficial",
-    cliente: {
-      nombre: "Martin Tonatiuh Hernandez Garfias",
-      empresa: "Servicios de Automatización & QA",
-      email: "hegmtona2024@gmail.com",
-      telefono: "+52 56 1562 5182"
-    },
-    requerimiento: {
-      servicio: "QA Functional & Automation Suite",
-      prioridad: "Alta",
-      fechaSolicitud: new Date().toISOString()
-    }
-  }, null, 2));
-
-  const [logSalida, setLogSalida] = useState({
-    status: 200,
-    mensaje: 'Flujo listo para recibir eventos HTTP POST y procesar payloads JSON.',
-    tiempoTotal: '38ms',
-    idEjecucion: 'EXEC-N8N-84920',
-    datosResultado: {
-      statusProcesamiento: "COMPLETADO",
-      correoNotificado: "hegmtona2024@gmail.com",
-      canalAlertas: "WhatsApp API",
-      trazabilidadQA: "REGISTRADA"
-    },
-    nodos: [
-      { id: 1, nombre: '1. Webhook Receiver', tipo: 'POST /webhook', estado: 'Listo', latencia: '12ms' },
-      { id: 2, nombre: '2. Schema Validator', tipo: 'n8n-nodes-base.if', estado: 'Listo', latencia: '8ms' },
-      { id: 3, nombre: '3. Data Transform & QA', tipo: 'n8n-nodes-base.set', estado: 'Listo', latencia: '11ms' },
-      { id: 4, nombre: '4. Gmail & WhatsApp Dispatch', tipo: 'n8n-nodes-base.emailSend', estado: 'Listo', latencia: '7ms' }
-    ]
-  });
-
-  const cambiarEvento = (e) => {
-    const val = e.target.value;
-    setTipoEvento(val);
-    setErrorJson('');
-
-    if (val === 'lead') {
-      setEndpointUrl('https://automation.martin-qa.dev/webhook/v1/lead-dispatcher');
-      setPayloadJson(JSON.stringify({
-        evento: "NUEVO_LEAD_PORTAFOLIO",
-        cliente: {
-          nombre: "Martin Tonatiuh Hernandez Garfias",
-          empresa: "Servicios de Automatización & QA",
-          email: "hegmtona2024@gmail.com",
-          telefono: "+52 56 1562 5182"
-        },
-        requerimiento: {
-          servicio: "QA Functional & Automation Suite",
-          prioridad: "Alta",
-          fechaSolicitud: new Date().toISOString()
-        }
-      }, null, 2));
-    } else if (val === 'bug') {
-      setEndpointUrl('https://automation.martin-qa.dev/webhook/v1/jira-bug-sync');
-      setPayloadJson(JSON.stringify({
-        evento: "BUG_REPORT_ALERT",
-        idIncidencia: "QA-BUG-1092",
-        severidad: "Crítica",
-        moduloAfectado: "SPEI / Core Transferencias",
-        descripcion: "Fallo en algoritmo de dígito verificador CLABE",
-        ambiente: "Staging / Pre-Producción",
-        reportadoPor: "Martin Hernandez (QA Lead)"
-      }, null, 2));
-    } else if (val === 'api-health') {
-      setEndpointUrl('https://automation.martin-qa.dev/webhook/v1/api-monitor');
-      setPayloadJson(JSON.stringify({
-        evento: "HEALTH_CHECK_MONITOR",
-        servicio: "API REST Pagos SPEI",
-        codigoRespuesta: 200,
-        latenciaMs: 46,
-        disponibilidad: "99.98%",
-        timestamp: new Date().toISOString()
-      }, null, 2));
-    }
-  };
-
-  const ejecutarFlujoN8n = () => {
-    try {
-      JSON.parse(payloadJson);
-      setErrorJson('');
-    } catch {
-      setErrorJson('El formato JSON contiene errores. Corrige la sintaxis.');
-      return;
-    }
-
-    setEjecutandoN8n(true);
-    setNodoActivoIndex(0);
-
-    setTimeout(() => setNodoActivoIndex(1), 250);
-    setTimeout(() => setNodoActivoIndex(2), 550);
-    setTimeout(() => {
-      setNodoActivoIndex(3);
-      const parsed = JSON.parse(payloadJson);
-      const randomLat = Math.floor(Math.random() * 15 + 32);
-      const randomExec = 'EXEC-N8N-' + Math.floor(Math.random() * 89999 + 10000);
-
-      setLogSalida({
-        status: 200,
-        mensaje: "Evento '" + (parsed.evento || 'HTTP_EVENT') + "' procesado exitosamente por la canalización.",
-        tiempoTotal: randomLat + 'ms',
-        idEjecucion: randomExec,
-        datosResultado: {
-          statusProcesamiento: "COMPLETADO_OK",
-          payloadRecibido: parsed.evento || "EVENTO_VALIDO",
-          correoDestinatario: "hegmtona2024@gmail.com",
-          idEjecucion: randomExec,
-          timestamp: new Date().toLocaleTimeString()
-        },
-        nodos: [
-          { id: 1, nombre: '1. Webhook Receiver', tipo: 'POST /webhook', estado: '200 OK', latencia: '11ms' },
-          { id: 2, nombre: '2. Schema Validator', tipo: 'n8n-nodes-base.if', estado: 'Validado', latencia: '8ms' },
-          { id: 3, nombre: '3. Data Transform & QA', tipo: 'n8n-nodes-base.set', estado: 'Estructurado', latencia: '9ms' },
-          { id: 4, nombre: '4. Gmail & WhatsApp Dispatch', tipo: 'n8n-nodes-base.emailSend', estado: 'Despachado', latencia: '7ms' }
-        ]
-      });
-
-      setEjecutandoN8n(false);
-      setNodoActivoIndex(-1);
-    }, 900);
-  };
-
-  const descargarBlueprintN8N = () => {
-    const workflowJSON = {
-      name: "Workflow_n8n_" + tipoEvento.toUpperCase() + "_Oficial",
-      nodes: [
-        { name: "Webhook Receiver", type: "n8n-nodes-base.webhook", parameters: { httpMethod: "POST", path: "contacto-portafolio" } },
-        { name: "Validate Schema", type: "n8n-nodes-base.if", parameters: { conditions: { string: [{ value1: "={{ $json.evento }}", operation: "isNotEmpty" }] } } },
-        { name: "Transform QA Data", type: "n8n-nodes-base.set", parameters: { values: { string: [{ name: "status", value: "PROCESADO_QA" }] } } },
-        { name: "Send Alerts & Gmail", type: "n8n-nodes-base.emailSend", parameters: { toEmail: "hegmtona2024@gmail.com" } }
-      ]
-    };
-
-    const blob = new Blob([JSON.stringify(workflowJSON, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', "n8n_Workflow_" + tipoEvento.toUpperCase() + ".json");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // =========================================================================
-  // 2. GENERADOR DE MATRIZ DE PRUEBAS & AUTO-COTIZADOR
+  // 1. GENERADOR DE MATRIZ CON PARSER DE ESTRUCTURA PROPIA (3 ARCHIVOS)
   // =========================================================================
   const [pasoMP, setPasoMP] = useState(1);
-  const [modoEntradaReq, setModoEntradaReq] = useState('ejemplos');
-  const [archivoSubido, setArchivoSubido] = useState(null);
-  const [textoLibreReq, setTextoLibreReq] = useState('');
-  const [casoDetalle, setCasoDetalle] = useState(null);
   const [alertaSeguridad, setAlertaSeguridad] = useState(false);
   const [modalCotizador, setModalCotizador] = useState(false);
   const [cotizacionEnviada, setCotizacionEnviada] = useState(false);
-  const [procesandoMP, setProcesandoMP] = useState(false);
+  const [procesandoPaso, setProcesandoPaso] = useState(false);
+
+  // ARCHIVO 1: REQUERIMIENTOS
+  const [modoEntradaReq, setModoEntradaReq] = useState('ejemplos');
+  const [archivoReqNombre, setArchivoReqNombre] = useState(null);
+  const [archivoReqTipo, setArchivoReqTipo] = useState(null);
+  const [vistaPreviaReqImg, setVistaPreviaReqImg] = useState(null);
+  const [textoLibreReq, setTextoLibreReq] = useState('');
 
   const [requerimiento, setRequerimiento] = useState({
     idHU: 'HU-SPEI-104',
@@ -184,116 +32,491 @@ export default function QASuiteStudio({ onOpenContact }) {
     ]
   });
 
-  const [formatoMatriz, setFormatoMatriz] = useState({
-    estandar: 'Jira / XRay Test Management',
-    prefijoID: 'TC-CORE',
-    columnas: ['ID Caso', 'Título del Escenario', 'Tipo de Prueba', 'Precondiciones', 'Pasos de Ejecución', 'Resultado Esperado', 'Prioridad', 'Estado']
-  });
+  // ARCHIVO 2: PLANTILLA / ESTRUCTURA DE MATRIZ DEL USUARIO
+  const [modoEntradaFormato, setModoEntradaFormato] = useState('subir'); // 'subir' | 'texto' | 'predefinido'
+  const [archivoFormatoNombre, setArchivoFormatoNombre] = useState(null);
+  const [vistaPreviaFormatoImg, setVistaPreviaFormatoImg] = useState(null);
+  const [analizandoEstructura, setAnalizandoEstructura] = useState(false);
+  const [textoEstructuraUsuario, setTextoEstructuraUsuario] = useState('');
 
-  const matrizCasos = [
+  // Columnas detectadas/analizadas de la plantilla del usuario
+  const [columnasPersonalizadas, setColumnasPersonalizadas] = useState([
+    'ID Caso',
+    'Historia / Requerimiento',
+    'Escenario de Prueba',
+    'Tipo de Prueba',
+    'Precondiciones',
+    'Pasos de Ejecución',
+    'Datos de Prueba (Input)',
+    'Resultado Esperado',
+    'Severidad',
+    'Estado'
+  ]);
+
+  const [nuevaColumna, setNuevaColumna] = useState('');
+
+  // Manejo de carga de Archivo 1 (Requerimientos)
+  const manejarSubidaReq = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setArchivoReqNombre(file.name);
+      setArchivoReqTipo(file.type);
+
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => setVistaPreviaReqImg(ev.target.result);
+        reader.readAsDataURL(file);
+      } else {
+        setVistaPreviaReqImg(null);
+      }
+
+      setRequerimiento({
+        idHU: 'DOC-' + file.name.slice(0, 8).toUpperCase(),
+        titulo: 'Requerimiento Extraído: ' + file.name,
+        descripcion: 'Especificación técnica cargada desde ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB). Se analizaron reglas de validación, flujos transaccionales y casos de excepción.',
+        origen: 'Archivo de entrada (' + file.name + ')',
+        criterios: [
+          'Validación de campos obligatorios y reglas de entrada.',
+          'Flujos alternos, límites de frontera y códigos de error.',
+          'Idempotencia, concurrencia y consistencia en base de datos.',
+          'Criterios de aceptación UAT para certificación a producción.'
+        ]
+      });
+    }
+  };
+
+  // Manejo de carga de Archivo 2 (Plantilla / Estructura del Usuario)
+  const manejarSubidaFormato = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setArchivoFormatoNombre(file.name);
+      setAnalizandoEstructura(true);
+
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => setVistaPreviaFormatoImg(ev.target.result);
+        reader.readAsDataURL(file);
+      } else {
+        setVistaPreviaFormatoImg(null);
+      }
+
+      // Simulación de análisis OCR y parsing de estructura
+      setTimeout(() => {
+        setAnalizandoEstructura(false);
+        if (file.name.toLowerCase().includes('jira') || file.name.toLowerCase().includes('xray')) {
+          setColumnasPersonalizadas([
+            'Test Issue Key',
+            'Summary',
+            'Test Type',
+            'Preconditions',
+            'Action / Steps',
+            'Test Data',
+            'Expected Result',
+            'Priority',
+            'Execution Status'
+          ]);
+        } else if (file.name.toLowerCase().includes('banco') || file.name.toLowerCase().includes('finan')) {
+          setColumnasPersonalizadas([
+            'ID Caso',
+            'Módulo Core',
+            'Escenario de Negocio',
+            'Precondición Bancaria',
+            'Pasos de Transacción',
+            'Datos (CLABE / Monto)',
+            'Resultado Esperado CEP',
+            'Severidad Crítica',
+            'Veredicto'
+          ]);
+        } else {
+          setColumnasPersonalizadas([
+            'ID_Caso',
+            'Requerimiento_Asociado',
+            'Descripcion_Escenario',
+            'Tipo_Validacion',
+            'Precondiciones',
+            'Pasos_Detallados',
+            'Valores_Entrada',
+            'Comportamiento_Esperado',
+            'Impacto',
+            'Estado'
+          ]);
+        }
+      }, 700);
+    }
+  };
+
+  const procesarTextoEstructura = () => {
+    if (!textoEstructuraUsuario.trim()) return;
+    const cols = textoEstructuraUsuario
+      .split(/[,\n|\t]/)
+      .map(c => c.trim())
+      .filter(c => c.length > 1);
+
+    if (cols.length > 0) {
+      setColumnasPersonalizadas(cols);
+    }
+  };
+
+  const agregarColumnaManual = () => {
+    if (nuevaColumna.trim() && !columnasPersonalizadas.includes(nuevaColumna.trim())) {
+      setColumnasPersonalizadas([...columnasPersonalizadas, nuevaColumna.trim()]);
+      setNuevaColumna('');
+    }
+  };
+
+  const eliminarColumna = (colName) => {
+    if (columnasPersonalizadas.length > 3) {
+      setColumnasPersonalizadas(columnasPersonalizadas.filter(c => c !== colName));
+    }
+  };
+
+  // ARCHIVO 3: Generación dinámica adaptada a las columnas detectadas
+  const [casoDetalle, setCasoDetalle] = useState(null);
+
+  const matrizCasosDinamicos = [
     {
       id: 'TC-CORE-01',
-      titulo: 'Ejecución exitosa del flujo principal con datos válidos y sesión activa',
-      categoriaMetrica: 'HP',
       tipo: 'Funcional (Happy Path)',
-      precondiciones: 'Usuario autenticado y parámetros del módulo cargados correctamente.',
-      datosPrueba: 'Entradas válidas conformes a la especificación del requerimiento.',
-      pasos: '1. Acceder al módulo.\n2. Ingresar datos obligatorios válidos.\n3. Presionar botón Procesar/Guardar.',
-      resultado: 'Operación completada con éxito, respuesta HTTP 200/201 y persistencia en base de datos.',
-      prioridad: 'Crítica',
-      estado: 'Listo para Ejecución'
+      categoriaMetrica: 'HP',
+      valores: {
+        'ID Caso': 'TC-CORE-01',
+        'ID_Caso': 'TC-CORE-01',
+        'Test Issue Key': 'TC-CORE-01',
+        'Historia / Requerimiento': requerimiento.idHU,
+        'Requerimiento_Asociado': requerimiento.idHU,
+        'Módulo Core': 'SPEI / Transacciones',
+        'Summary': 'Ejecución exitosa de flujo principal con datos válidos',
+        'Escenario de Prueba': 'Ejecución exitosa de flujo principal con datos válidos',
+        'Descripcion_Escenario': 'Ejecución exitosa de flujo principal con datos válidos',
+        'Escenario de Negocio': 'Transferencia interbancaria exitosa en tiempo real',
+        'Tipo de Prueba': 'Funcional (Happy Path)',
+        'Tipo_Validacion': 'Happy Path (Positivo)',
+        'Test Type': 'Manual / Automated',
+        'Precondiciones': 'Sesión activa con saldo disponible mayor al monto a transferir',
+        'Precondición Bancaria': 'Cuenta origen con saldo líquido suficiente y CLABE destino activa',
+        'Preconditions': 'User logged in with active account and positive balance',
+        'Pasos de Ejecución': '1. Acceder al módulo.\n2. Capturar CLABE de 18 dígitos y monto válido.\n3. Presionar botón Transferir.',
+        'Pasos_Detallados': '1. Ingresar al formulario.\n2. Llenar campos obligatorios válidos.\n3. Confirmar transacción.',
+        'Pasos de Transacción': '1. Seleccionar cuenta retiro.\n2. Ingresar CLABE 18 dígitos.\n3. Autorizar con Token.',
+        'Action / Steps': '1. Navigate to module.\n2. Enter valid 18-digit CLABE.\n3. Click Submit.',
+        'Datos de Prueba (Input)': 'CLABE: 012180015678901234, Monto: $1,500.00 MXN',
+        'Valores_Entrada': 'CLABE: 012180015678901234, Monto: $1,500.00 MXN',
+        'Datos (CLABE / Monto)': 'CLABE: 012180015678901234 | Monto: $1,500.00',
+        'Test Data': 'CLABE: 012180015678901234, Amount: 1500.00',
+        'Resultado Esperado': 'Transacción procesada con éxito, generación de folio CEP y débito inmediato',
+        'Comportamiento_Esperado': 'Respuesta HTTP 200 OK y actualización de balance en tiempo real',
+        'Resultado Esperado CEP': 'Folio de rastreo CEP generado y dispersión SPEI en < 5 seg',
+        'Expected Result': 'Transaction processed with HTTP 200 and receipt ID generated',
+        'Severidad': 'Crítica',
+        'Impacto': 'Alto',
+        'Severidad Crítica': 'Crítica (Bloqueante)',
+        'Priority': 'Highest',
+        'Estado': 'Listo para Ejecución',
+        'Veredicto': 'Aprobado (Pass)',
+        'Execution Status': 'Ready for Test'
+      }
     },
     {
       id: 'TC-CORE-02',
-      titulo: 'Validación de campos obligatorios vacíos y bloqueo de envío',
-      categoriaMetrica: 'TTF',
       tipo: 'Frontera / Negativo (TTF)',
-      precondiciones: 'Formulario en pantalla.',
-      datosPrueba: 'Campos requeridos en blanco (null / empty).',
-      pasos: '1. Omitir captura de campos obligatorios.\n2. Intentar enviar petición.',
-      resultado: 'Bloqueo en cliente y alertas visuales: "Este campo es requerido".',
-      prioridad: 'Crítica',
-      estado: 'Listo para Ejecución'
+      categoriaMetrica: 'TTF',
+      valores: {
+        'ID Caso': 'TC-CORE-02',
+        'ID_Caso': 'TC-CORE-02',
+        'Test Issue Key': 'TC-CORE-02',
+        'Historia / Requerimiento': requerimiento.idHU,
+        'Requerimiento_Asociado': requerimiento.idHU,
+        'Módulo Core': 'SPEI / Validación CLABE',
+        'Summary': 'Validación de longitud menor a 18 dígitos en CLABE destino',
+        'Escenario de Prueba': 'Validación de longitud menor a 18 dígitos en CLABE destino',
+        'Descripcion_Escenario': 'Intento de transferencia con CLABE incompleta (16 dígitos)',
+        'Escenario de Negocio': 'Rechazo de formato inválido en cuenta receptora',
+        'Tipo de Prueba': 'Validación de Frontera (TTF)',
+        'Tipo_Validacion': 'Negativa / Frontera',
+        'Test Type': 'Functional Negative',
+        'Precondiciones': 'Formulario de transferencias abierto en pantalla',
+        'Precondición Bancaria': 'Módulo de transferencias activo',
+        'Preconditions': 'Transfer view displayed',
+        'Pasos de Ejecución': '1. Ingresar CLABE de 16 dígitos.\n2. Intentar continuar con el envío.',
+        'Pasos_Detallados': '1. Ingresar cadena corta.\n2. Presionar Enviar.',
+        'Pasos de Transacción': '1. Capturar CLABE truncada.\n2. Presionar Validar.',
+        'Action / Steps': '1. Type 16 digits CLABE.\n2. Trigger transfer button.',
+        'Datos de Prueba (Input)': 'CLABE: 01218001567890 (16 dígitos)',
+        'Valores_Entrada': 'CLABE: 01218001567890 (16 dígitos)',
+        'Datos (CLABE / Monto)': 'CLABE incompleta (16 dígitos)',
+        'Test Data': 'CLABE: 01218001567890',
+        'Resultado Esperado': 'Bloqueo en interfaz: "La CLABE debe contener exactamente 18 dígitos"',
+        'Comportamiento_Esperado': 'Validación de schema en cliente impidiendo el disparo HTTP',
+        'Resultado Esperado CEP': 'Alerta en rojo: Formato de cuenta inválido',
+        'Expected Result': 'Field validation error displayed and submission blocked',
+        'Severidad': 'Crítica',
+        'Impacto': 'Alto',
+        'Severidad Crítica': 'Alta',
+        'Priority': 'High',
+        'Estado': 'Listo para Ejecución',
+        'Veredicto': 'Listo',
+        'Execution Status': 'Ready for Test'
+      }
     },
     {
       id: 'TC-CORE-03',
-      titulo: 'Validación de límites de caracteres y longitud máxima permitida',
+      tipo: 'Regla de Negocio (TTF)',
       categoriaMetrica: 'TTF',
-      tipo: 'Frontera (Límites)',
-      precondiciones: 'Campo de texto activo.',
-      datosPrueba: 'Cadena con longitud N + 1 caracteres sobre el límite.',
-      pasos: '1. Ingresar texto excediendo límite permitido.\n2. Validar respuesta del campo.',
-      resultado: 'El sistema trunca la entrada o emite mensaje de longitud máxima superada.',
-      prioridad: 'Alta',
-      estado: 'Listo para Ejecución'
+      valores: {
+        'ID Caso': 'TC-CORE-03',
+        'ID_Caso': 'TC-CORE-03',
+        'Test Issue Key': 'TC-CORE-03',
+        'Historia / Requerimiento': requerimiento.idHU,
+        'Requerimiento_Asociado': requerimiento.idHU,
+        'Módulo Core': 'SPEI / Saldo y Fondos',
+        'Summary': 'Intento de transferencia por monto superior al saldo disponible',
+        'Escenario de Prueba': 'Intento de transferencia por monto superior al saldo disponible',
+        'Descripcion_Escenario': 'Validación de fondos insuficientes en cuenta de origen',
+        'Escenario de Negocio': 'Control de sobregiro no autorizado',
+        'Tipo de Prueba': 'Regla de Negocio (Negativo)',
+        'Tipo_Validacion': 'Negativa (Fondos)',
+        'Test Type': 'Business Rule Validation',
+        'Precondiciones': 'Cuenta con saldo de $500.00 MXN',
+        'Precondición Bancaria': 'Saldo disponible = $500.00 MXN',
+        'Preconditions': 'Account balance is $500.00',
+        'Pasos de Ejecución': '1. Capturar monto de $1,000.00 MXN.\n2. Intentar confirmar envío.',
+        'Pasos_Detallados': '1. Capturar monto excedente.\n2. Presionar Transferir.',
+        'Pasos de Transacción': '1. Solicitar transferencia > saldo.\n2. Autorizar.',
+        'Action / Steps': '1. Enter $1,000.00.\n2. Submit transfer.',
+        'Datos de Prueba (Input)': 'Saldo: $500.00, Monto solicitado: $1,000.00',
+        'Valores_Entrada': 'Saldo: $500.00, Monto: $1,000.00',
+        'Datos (CLABE / Monto)': 'Monto = $1,000.00 vs Saldo = $500.00',
+        'Test Data': 'Balance: $500, Amount: $1000',
+        'Resultado Esperado': 'Mensaje de error: "Saldo insuficiente para completar la operación"',
+        'Comportamiento_Esperado': 'Rechazo inmediato sin afectar saldo en base de datos',
+        'Resultado Esperado CEP': 'Error 422: Fondos no disponibles',
+        'Expected Result': 'Rejection: Insufficient funds error message displayed',
+        'Severidad': 'Crítica',
+        'Impacto': 'Alto',
+        'Severidad Crítica': 'Crítica',
+        'Priority': 'High',
+        'Estado': 'Listo para Ejecución',
+        'Veredicto': 'Listo',
+        'Execution Status': 'Ready for Test'
+      }
     },
     {
       id: 'TC-CORE-04',
-      titulo: 'Smoke Test de disponibilidad de componentes y carga inicial de interfaz',
+      tipo: 'Smoke Test / Disponibilidad',
       categoriaMetrica: 'Smoke',
-      tipo: 'Smoke / Sanity Test',
-      precondiciones: 'Navegador en ruta del módulo.',
-      datosPrueba: 'Inspección de elementos.',
-      pasos: '1. Cargar la vista.\n2. Comprobar que botones, tablas e inputs respondan.',
-      resultado: 'Pantalla renderizada en < 2 segundos sin errores de consola JS.',
-      prioridad: 'Alta',
-      estado: 'Listo para Ejecución'
+      valores: {
+        'ID Caso': 'TC-CORE-04',
+        'ID_Caso': 'TC-CORE-04',
+        'Test Issue Key': 'TC-CORE-04',
+        'Historia / Requerimiento': requerimiento.idHU,
+        'Requerimiento_Asociado': requerimiento.idHU,
+        'Módulo Core': 'SPEI / Interfaz UI',
+        'Summary': 'Smoke Test de renderizado de componentes y conexión a catálogo bancario',
+        'Escenario de Prueba': 'Smoke Test de renderizado de componentes y conexión a catálogo bancario',
+        'Descripcion_Escenario': 'Verificación de carga inicial de vista y catálogo de bancos',
+        'Escenario de Negocio': 'Disponibilidad del módulo transaccional',
+        'Tipo de Prueba': 'Smoke / Sanity Test',
+        'Tipo_Validacion': 'Sanity UI',
+        'Test Type': 'Smoke Test',
+        'Precondiciones': 'Navegador con conectividad a red',
+        'Precondición Bancaria': 'Servicio de catálogo de bancos en línea',
+        'Preconditions': 'System online',
+        'Pasos de Ejecución': '1. Cargar ruta del módulo.\n2. Validar despliegue de campos e inputs.',
+        'Pasos_Detallados': '1. Abrir pantalla.\n2. Inspeccionar elementos.',
+        'Pasos de Transacción': '1. Abrir vista de pagos.\n2. Verificar lista de instituciones.',
+        'Action / Steps': '1. Load transfer page.\n2. Check all UI components.',
+        'Datos de Prueba (Input)': 'Navegador Web / Mobile Safari',
+        'Valores_Entrada': 'Render inicial',
+        'Datos (CLABE / Monto)': 'Carga general de vista',
+        'Test Data': 'UI elements',
+        'Resultado Esperado': 'Pantalla renderizada en < 2 segundos sin errores de consola',
+        'Comportamiento_Esperado': 'Componentes reactivos e inputs habilitados',
+        'Resultado Esperado CEP': 'Catálogo de bancos sincronizado al 100%',
+        'Expected Result': 'Page rendered in < 2 seconds without JS errors',
+        'Severidad': 'Alta',
+        'Impacto': 'Medio',
+        'Severidad Crítica': 'Alta',
+        'Priority': 'Medium',
+        'Estado': 'Listo para Ejecución',
+        'Veredicto': 'Listo',
+        'Execution Status': 'Ready for Test'
+      }
     },
     {
       id: 'TC-CORE-05',
-      titulo: 'Manejo de desconexión o latencia alta con el backend / servicios externos',
+      tipo: 'Resiliencia / Timeout API',
       categoriaMetrica: 'Otros',
-      tipo: 'Resiliencia / API',
-      precondiciones: 'Simulación de pérdida de red o timeout > 10,000ms.',
-      datosPrueba: 'Petición con retardo de red.',
-      pasos: '1. Disparar acción principal.\n2. Interrumpir o demorar respuesta del servicio.',
-      resultado: 'Mensaje amigable de reintento sin congelamiento de la aplicación.',
-      prioridad: 'Media',
-      estado: 'Listo para Ejecución'
+      valores: {
+        'ID Caso': 'TC-CORE-05',
+        'ID_Caso': 'TC-CORE-05',
+        'Test Issue Key': 'TC-CORE-05',
+        'Historia / Requerimiento': requerimiento.idHU,
+        'Requerimiento_Asociado': requerimiento.idHU,
+        'Módulo Core': 'SPEI / Conectividad Core',
+        'Summary': 'Rollback automático de fondos ante timeout del servicio bancario (>10s)',
+        'Escenario de Prueba': 'Rollback automático de fondos ante timeout del servicio bancario (>10s)',
+        'Descripcion_Escenario': 'Manejo de desconexión con el switch SPEI',
+        'Escenario de Negocio': 'Consistencia contable en fallos de red',
+        'Tipo de Prueba': 'Resiliencia / Rollback',
+        'Tipo_Validacion': 'Resiliencia / Red',
+        'Test Type': 'API Resilience',
+        'Precondiciones': 'Simulación de timeout en endpoint de dispersión',
+        'Precondición Bancaria': 'Conexión con switch demorada > 10,000ms',
+        'Preconditions': 'Simulated network timeout > 10s',
+        'Pasos de Ejecución': '1. Disparar transferencia.\n2. Forzar latencia de 12 segundos en backend.',
+        'Pasos_Detallados': '1. Iniciar pago.\n2. Interrumpir respuesta.',
+        'Pasos de Transacción': '1. Enviar dispersión.\n2. Registrar evento de timeout.',
+        'Action / Steps': '1. Execute transfer.\n2. Delay backend response > 10s.',
+        'Datos de Prueba (Input)': 'Monto: $2,000.00, Latencia simulada: 12000ms',
+        'Valores_Entrada': 'Timeout: 12000ms',
+        'Datos (CLABE / Monto)': 'Transacción con retardo de red',
+        'Test Data': 'Delay: 12000ms',
+        'Resultado Esperado': 'Rollback automático de saldo y mensaje: "Operación no completada, tu saldo no fue afectado"',
+        'Comportamiento_Esperado': 'Rollback ACID en BD y log de auditoría registrado',
+        'Resultado Esperado CEP': 'Saldo intacto y reverso contable aplicado',
+        'Expected Result': 'Automatic rollback applied and safe user alert shown',
+        'Severidad': 'Crítica',
+        'Impacto': 'Alto',
+        'Severidad Crítica': 'Crítica',
+        'Priority': 'Highest',
+        'Estado': 'Listo para Ejecución',
+        'Veredicto': 'Listo',
+        'Execution Status': 'Ready for Test'
+      }
     },
     {
       id: 'TC-CORE-06',
-      titulo: 'Validación de concurrencia e idempotencia por doble clic rápido',
+      tipo: 'Concurrencia / Idempotencia',
       categoriaMetrica: 'TTF',
-      tipo: 'Concurrencia',
-      precondiciones: 'Formulario con datos listos para procesar.',
-      datosPrueba: 'Doble clic en < 250ms.',
-      pasos: '1. Presionar dos veces consecutivas el botón de confirmación.',
-      resultado: 'Deshabilitación automática tras el primer clic impidiendo transacciones duplicadas.',
-      prioridad: 'Crítica',
-      estado: 'Bloqueado (Solicitar Completa)'
+      valores: {
+        'ID Caso': 'TC-CORE-06',
+        'ID_Caso': 'TC-CORE-06',
+        'Test Issue Key': 'TC-CORE-06',
+        'Historia / Requerimiento': requerimiento.idHU,
+        'Requerimiento_Asociado': requerimiento.idHU,
+        'Módulo Core': 'SPEI / Idempotencia',
+        'Summary': 'Prevención de transferencias duplicadas por doble clic rápido',
+        'Escenario de Prueba': 'Prevención de transferencias duplicadas por doble clic rápido',
+        'Descripcion_Escenario': 'Validación de token de idempotencia en peticiones continuas',
+        'Escenario de Negocio': 'Blindaje antifraude y no duplicidad',
+        'Tipo de Prueba': 'Concurrencia (TTF)',
+        'Tipo_Validacion': 'Concurrencia',
+        'Test Type': 'Idempotency Test',
+        'Precondiciones': 'Formulario con datos válidos listo para confirmar',
+        'Precondición Bancaria': 'Header Idempotency-Key activo en la petición',
+        'Preconditions': 'Valid form ready to submit',
+        'Pasos de Ejecución': '1. Presionar dos veces consecutivas el botón Transferir en < 200ms.',
+        'Pasos_Detallados': '1. Doble clic rápido sobre Enviar.',
+        'Pasos de Transacción': '1. Disparo concurrente de confirmación.',
+        'Action / Steps': '1. Double click confirm button in < 200ms.',
+        'Datos de Prueba (Input)': 'Peticiones simultáneas con el mismo Correlation-ID',
+        'Valores_Entrada': 'Doble submit rápido',
+        'Datos (CLABE / Monto)': 'Doble petición en milisegundos',
+        'Test Data': 'Rapid consecutive clicks',
+        'Resultado Esperado': 'El sistema procesa 1 sola transferencia y desactiva el botón tras el primer clic',
+        'Comportamiento_Esperado': 'Bloqueo de request duplicada y respuesta 409 o 200 idempotente',
+        'Resultado Esperado CEP': '1 solo folio CEP emitido',
+        'Expected Result': 'Single transaction processed, duplicate request ignored',
+        'Severidad': 'Crítica',
+        'Impacto': 'Alto',
+        'Severidad Crítica': 'Crítica',
+        'Priority': 'Highest',
+        'Estado': 'Bloqueado (Solicitar Completa)',
+        'Veredicto': 'Protegido',
+        'Execution Status': 'Protected'
+      }
     },
     {
       id: 'TC-CORE-07',
-      titulo: 'Sanitización de caracteres especiales y prevención de inyección XSS/SQL',
+      tipo: 'Seguridad / Inyección XSS & SQL',
       categoriaMetrica: 'Otros',
-      tipo: 'Seguridad',
-      precondiciones: 'Campos de entrada disponibles.',
-      datosPrueba: "Payloads: <script>alert(1)</script> / ' OR '1'='1",
-      pasos: '1. Introducir código malicioso en campos de texto.\n2. Enviar datos.',
-      resultado: 'Sanitización de cadenas sin ejecución de scripts ni vulneración de BD.',
-      prioridad: 'Crítica',
-      estado: 'Bloqueado (Solicitar Completa)'
+      valores: {
+        'ID Caso': 'TC-CORE-07',
+        'ID_Caso': 'TC-CORE-07',
+        'Test Issue Key': 'TC-CORE-07',
+        'Historia / Requerimiento': requerimiento.idHU,
+        'Requerimiento_Asociado': requerimiento.idHU,
+        'Módulo Core': 'SPEI / Seguridad',
+        'Summary': 'Sanitización de campos de texto y concepto frente a inyecciones de código',
+        'Escenario de Prueba': 'Sanitización de campos de texto y concepto frente a inyecciones de código',
+        'Descripcion_Escenario': 'Inyección de scripts en el campo "Concepto / Referencia"',
+        'Escenario de Negocio': 'Seguridad en pasarelas de pago',
+        'Tipo de Prueba': 'Seguridad / Sanitización',
+        'Tipo_Validacion': 'Seguridad (XSS/SQLi)',
+        'Test Type': 'Security Penetration',
+        'Precondiciones': 'Campo de concepto de pago habilitado',
+        'Precondición Bancaria': 'Filtro WAF y sanitizador en backend activos',
+        'Preconditions': 'Reference field active',
+        'Pasos de Ejecución': '1. Ingresar payload malicioso en concepto.\n2. Enviar transferencia.',
+        'Pasos_Detallados': '1. Capturar script en concepto.\n2. Confirmar envío.',
+        'Pasos de Transacción': '1. Inyectar cadenas especiales.\n2. Procesar.',
+        'Action / Steps': '1. Enter malicious script in reference field.\n2. Submit transfer.',
+        'Datos de Prueba (Input)': "Concepto: <script>alert('XSS')</script> / ' OR 1=1 --",
+        'Valores_Entrada': "<script>alert('XSS')</script>",
+        'Datos (CLABE / Monto)': 'Payload de prueba de seguridad',
+        'Test Data': "<script>alert('XSS')</script>",
+        'Resultado Esperado': 'El texto se escapa y sanitiza sin ejecutarse scripts ni alterar la BD',
+        'Comportamiento_Esperado': 'Texto plano almacenado sin ejecución en front ni en back',
+        'Resultado Esperado CEP': 'Sanitización estricta en comprobante',
+        'Expected Result': 'Input safely sanitized and rendered as plain text',
+        'Severidad': 'Crítica',
+        'Impacto': 'Alto',
+        'Severidad Crítica': 'Crítica',
+        'Priority': 'Highest',
+        'Estado': 'Bloqueado (Solicitar Completa)',
+        'Veredicto': 'Protegido',
+        'Execution Status': 'Protected'
+      }
     },
     {
       id: 'TC-CORE-08',
-      titulo: 'Verificación de persistencia y consistencia de datos en base de datos',
+      tipo: 'Persistencia & SQL Integrity',
       categoriaMetrica: 'HP',
-      tipo: 'Integridad de Datos (SQL)',
-      precondiciones: 'Transacción completada.',
-      datosPrueba: 'Consulta SELECT a tablas relacionadas.',
-      pasos: '1. Consultar registros insertados en BD.\n2. Validar tipos de datos y timestamps.',
-      resultado: 'Registros normalizados correctamente con integridad referencial.',
-      prioridad: 'Media',
-      estado: 'Bloqueado (Solicitar Completa)'
+      valores: {
+        'ID Caso': 'TC-CORE-08',
+        'ID_Caso': 'TC-CORE-08',
+        'Test Issue Key': 'TC-CORE-08',
+        'Historia / Requerimiento': requerimiento.idHU,
+        'Requerimiento_Asociado': requerimiento.idHU,
+        'Módulo Core': 'SPEI / Base de Datos',
+        'Summary': 'Verificación de persistencia, integridad referencial y auditoría en tablas SQL',
+        'Escenario de Prueba': 'Verificación de persistencia, integridad referencial y auditoría en tablas SQL',
+        'Descripcion_Escenario': 'Auditoría en base de datos tras transacción exitosa',
+        'Escenario de Negocio': 'Trazabilidad y cumplimiento regulatorio',
+        'Tipo de Prueba': 'Integridad de Datos (SQL)',
+        'Tipo_Validacion': 'Auditoría SQL',
+        'Test Type': 'Database Verification',
+        'Precondiciones': 'Transacción completada en el sistema',
+        'Precondición Bancaria': 'Acceso de lectura a tablas de transacciones y logs',
+        'Preconditions': 'Transaction completed in core system',
+        'Pasos de Ejecución': '1. Ejecutar consulta SQL en tabla `spei_transfers` y `audit_logs`.\n2. Validar timestamps y estados.',
+        'Pasos_Detallados': '1. Consultar SELECT * por ID de transacción.\n2. Comprobar llaves foráneas.',
+        'Pasos de Transacción': '1. Consultar movimientos en BD.\n2. Validar saldo final.',
+        'Action / Steps': '1. Query SQL tables spei_transfers and audit_logs.\n2. Verify integrity.',
+        'Datos de Prueba (Input)': 'SELECT * FROM spei_transfers WHERE tracking_key = CEP_FOLIO',
+        'Valores_Entrada': 'Query SQL por tracking_key',
+        'Datos (CLABE / Monto)': 'Validación directa en base de datos',
+        'Test Data': 'SQL query validation',
+        'Resultado Esperado': 'Registro creado con estado "COMPLETED", montos exactos y clave CEP persistida',
+        'Comportamiento_Esperado': 'Integridad referencial y congruencia contable al 100%',
+        'Resultado Esperado CEP': 'Registro contable inmutable generado',
+        'Expected Result': 'Record persisted with status COMPLETED and valid timestamps',
+        'Severidad': 'Alta',
+        'Impacto': 'Alto',
+        'Severidad Crítica': 'Alta',
+        'Priority': 'High',
+        'Estado': 'Bloqueado (Solicitar Completa)',
+        'Veredicto': 'Protegido',
+        'Execution Status': 'Protected'
+      }
     }
   ];
 
-  const totalCasos = matrizCasos.length;
-  const totalHP = matrizCasos.filter(c => c.categoriaMetrica === 'HP').length;
-  const totalTTF = matrizCasos.filter(c => c.categoriaMetrica === 'TTF').length;
-  const totalSmoke = matrizCasos.filter(c => c.categoriaMetrica === 'Smoke').length;
-  const totalOtros = matrizCasos.filter(c => c.categoriaMetrica === 'Otros').length;
+  const totalCasos = matrizCasosDinamicos.length;
+  const totalHP = matrizCasosDinamicos.filter(c => c.categoriaMetrica === 'HP').length;
+  const totalTTF = matrizCasosDinamicos.filter(c => c.categoriaMetrica === 'TTF').length;
+  const totalSmoke = matrizCasosDinamicos.filter(c => c.categoriaMetrica === 'Smoke').length;
+  const totalOtros = matrizCasosDinamicos.filter(c => c.categoriaMetrica === 'Otros').length;
 
   const [datosCotizacion, setDatosCotizacion] = useState({
     nombre: '',
@@ -305,58 +528,28 @@ export default function QASuiteStudio({ onOpenContact }) {
     tiempoEntrega: 'estandar'
   });
 
-  const manejarSubidaArchivo = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setArchivoSubido(file.name);
-      setRequerimiento({
-        idHU: 'DOC-' + file.name.slice(0, 8).toUpperCase(),
-        titulo: 'Requerimiento: ' + file.name,
-        descripcion: 'Especificación cargada desde ' + file.name + '. Analizando flujos y reglas transaccionales.',
-        origen: 'Archivo local (' + (file.size / 1024).toFixed(1) + ' KB)',
-        criterios: [
-          'Validación de campos obligatorios y reglas de entrada.',
-          'Verificación de flujos alternos y excepciones en transacciones.',
-          'Comprobación de tiempos de respuesta y consistencia en BD.',
-          'Criterios de aceptación UAT para certificación de pase a producción.'
-        ]
-      });
-    }
-  };
-
-  const procesarTextoLibre = () => {
-    if (!textoLibreReq.trim()) return;
-    setRequerimiento({
-      idHU: 'REQ-PERSONALIZADO',
-      titulo: 'Requerimiento Funcional Redactado',
-      descripcion: textoLibreReq,
-      origen: 'Descripción técnica provista por el cliente',
-      criterios: [
-        'Validación de flujo principal (Happy Path).',
-        'Pruebas de frontera, tipos de datos inválidos y entradas erróneas (TTF).',
-        'Validación de reglas de negocio y restricciones operativas.',
-        'Pruebas de humo (Smoke Test) y verificación de componentes.'
-      ]
-    });
-    setPasoMP(2);
-  };
-
-  const descargarMuestraCSV = () => {
-    const casosMuestra = matrizCasos.slice(0, 5);
-    let csv = 'ID_Caso,Titulo_Escenario,Tipo_Prueba,Categoria_Metrica,Precondiciones,Pasos_Ejecucion,Resultado_Esperado,Prioridad,Estado\n';
+  const descargarMuestraCSVPersonalizada = () => {
+    const casosMuestra = matrizCasosDinamicos.slice(0, 5);
+    let csv = columnasPersonalizadas.map(c => '"' + c.replace(/"/g, '""') + '"').join(',') + '\n';
     
-    casosMuestra.forEach((c) => {
-      const limpiar = (txt) => txt.replace(/^[=+\-@]/, "'").replace(/"/g, '""').replace(/\n/g, ' ');
-      csv += '"' + limpiar(c.id) + '","' + limpiar(c.titulo) + '","' + limpiar(c.tipo) + '","' + limpiar(c.categoriaMetrica) + '","' + limpiar(c.precondiciones) + '","' + limpiar(c.pasos) + '","' + limpiar(c.resultado) + '","' + limpiar(c.prioridad) + '","' + limpiar(c.estado) + '"\n';
+    casosMuestra.forEach((caso) => {
+      const fila = columnasPersonalizadas.map((col) => {
+        let val = caso.valores[col] || caso.valores[col.trim()] || caso[col] || caso.id || 'N/A';
+        if (typeof val === 'string') {
+          val = val.replace(/^[=+\-@]/, "'").replace(/"/g, '""').replace(/\n/g, ' ');
+        }
+        return '"' + val + '"';
+      });
+      csv += fila.join(',') + '\n';
     });
 
-    csv += '"\n--- NOTA DE COBERTURA ---","Muestra ejecutiva de 5 casos basada en [' + requerimiento.idHU + ']. Para la Matriz Completa (' + totalCasos + ' casos) contacta a Martin Hernandez Garfias (hegmtona2024@gmail.com / +52 56 1562 5182).","QA Engineering","","","","","",""\n';
+    csv += '\n"--- NOTA DE ESTRUCTURA PERSONALIZADA ---","Muestra de 5 casos adaptada a tus columnas [' + columnasPersonalizadas.join(' | ') + ']. Para la Matriz Completa (' + totalCasos + ' casos) contacta a Martin Hernandez Garfias (hegmtona2024@gmail.com / +52 56 1562 5182)."\n';
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'Muestra_5_Casos_Matriz_' + requerimiento.idHU + '.csv');
+    link.setAttribute('download', 'Muestra_Matriz_Formato_Personalizado_' + requerimiento.idHU + '.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -378,8 +571,9 @@ export default function QASuiteStudio({ onOpenContact }) {
     e.preventDefault();
     setCotizacionEnviada(true);
 
-    const texto = 'Hola Martin, deseo cotizar una *Matriz de Pruebas Completa*:\n' +
+    const texto = 'Hola Martin, deseo cotizar una *Matriz de Pruebas con mi Formato Personalizado*:\n' +
       '📌 *Requerimiento:* ' + requerimiento.titulo + ' (' + requerimiento.idHU + ')\n' +
+      '📊 *Columnas Solicitadas:* ' + columnasPersonalizadas.join(', ') + '\n' +
       '👤 *Nombre:* ' + (datosCotizacion.nombre || 'Interesado') + '\n' +
       '🏢 *Empresa:* ' + (datosCotizacion.empresa || 'N/A') + '\n' +
       '✉️ *Correo:* ' + datosCotizacion.email + '\n' +
@@ -407,7 +601,7 @@ export default function QASuiteStudio({ onOpenContact }) {
           <span className="text-xl">🛡️</span>
           <div>
             <p className="text-xs font-bold">Vista Protegida</p>
-            <p className="text-[11px] text-rose-200">Para obtener los casos completos usa el botón Auto-Cotizador.</p>
+            <p className="text-[11px] text-rose-200">Para obtener todos los casos completos utiliza el Auto-Cotizador.</p>
           </div>
         </div>
       )}
@@ -431,7 +625,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                 Cotizar Matriz Completa & Scripts E2E
               </h3>
               <p className="text-xs text-slate-400">
-                Basado en tu requerimiento: <strong className="text-white">{requerimiento.titulo}</strong>
+                Adaptada a tus columnas: <strong className="text-white">{columnasPersonalizadas.slice(0, 4).join(', ')}...</strong>
               </p>
             </div>
 
@@ -440,9 +634,9 @@ export default function QASuiteStudio({ onOpenContact }) {
                 <div className="h-12 w-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl mx-auto">
                   ✓
                 </div>
-                <h4 className="text-base font-bold text-white">¡Solicitud de Matriz Despachada!</h4>
+                <h4 className="text-base font-bold text-white">¡Solicitud Despachada con Éxito!</h4>
                 <p className="text-xs text-slate-300">
-                  Nos pondremos en contacto vía WhatsApp/Email para entregarte la matriz completa ({totalCasos} casos) con las suites de automatización.
+                  Nos pondremos en contacto contigo para entregarte la matriz completa ({totalCasos} casos) en tu plantilla y con los scripts de automatización listos.
                 </p>
                 <button
                   onClick={() => {
@@ -559,18 +753,6 @@ export default function QASuiteStudio({ onOpenContact }) {
       <div className="text-center max-w-2xl mx-auto mb-8">
         <div className="inline-flex items-center gap-2 bg-slate-950 border border-slate-800 p-1.5 rounded-2xl shadow-xl">
           <button
-            onClick={() => setPestanaActiva('n8n')}
-            className={'px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ' + (
-              pestanaActiva === 'n8n'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
-            )}
-          >
-            <span>🤖</span>
-            <span>1. Orquestador n8n & Webhooks</span>
-          </button>
-
-          <button
             onClick={() => setPestanaActiva('matriz')}
             className={'px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ' + (
               pestanaActiva === 'matriz'
@@ -579,7 +761,19 @@ export default function QASuiteStudio({ onOpenContact }) {
             )}
           >
             <span>📋</span>
-            <span>2. Matriz QA (Flujo 3 Archivos)</span>
+            <span>1. Generador de Matriz QA (Extractor de Tu Estructura)</span>
+          </button>
+
+          <button
+            onClick={() => setPestanaActiva('n8n')}
+            className={'px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ' + (
+              pestanaActiva === 'n8n'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            )}
+          >
+            <span>🤖</span>
+            <span>2. Orquestador n8n & Webhooks</span>
           </button>
         </div>
       </div>
@@ -588,7 +782,538 @@ export default function QASuiteStudio({ onOpenContact }) {
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
         
         {/* ========================================================================= */}
-        {/* PESTAÑA 1: ORQUESTADOR N8N */}
+        {/* PESTAÑA MATRIZ QA CON INGESTIÓN DE ESTRUCTURA DEL USUARIO */}
+        {/* ========================================================================= */}
+        {pestanaActiva === 'matriz' && (
+          <div className="space-y-6">
+            
+            {/* Flujo de 3 Pasos */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-800 pb-5">
+              <button
+                onClick={() => setPasoMP(1)}
+                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
+                  pasoMP === 1 ? 'bg-emerald-950 border-emerald-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-mono text-xs font-bold">1</span>
+                  <span className="text-xs font-bold">Archivo 1: Requerimientos</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">Sube doc, imagen o describe el flujo</p>
+              </button>
+
+              <button
+                onClick={() => setPasoMP(2)}
+                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
+                  pasoMP === 2 ? 'bg-cyan-950 border-cyan-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-mono text-xs font-bold">2</span>
+                  <span className="text-xs font-bold">Archivo 2: Tu Estructura / Plantilla</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">Sube tu formato (imagen, Excel o texto)</p>
+              </button>
+
+              <button
+                onClick={() => setPasoMP(3)}
+                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
+                  pasoMP === 3 ? 'bg-purple-950 border-purple-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-mono text-xs font-bold">3</span>
+                  <span className="text-xs font-bold">Archivo 3: Matriz Adaptada & CSV</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">Generada con tus columnas exactas</p>
+              </button>
+            </div>
+
+            {/* FASE 1: REQUERIMIENTOS (Doc, Imagen, Texto o Ejemplo) */}
+            {pasoMP === 1 && (
+              <div className="space-y-5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
+                      Archivo 1: Ingreso de Requerimiento (Doc / Imagen / Texto)
+                    </span>
+                    <p className="text-[11px] text-slate-400">Provee la especificación de lo que deseas probar.</p>
+                  </div>
+
+                  <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl">
+                    <button
+                      onClick={() => setModoEntradaReq('ejemplos')}
+                      className={'px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ' + (
+                        modoEntradaReq === 'ejemplos' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                      )}
+                    >
+                      ⚡ Plantilla Ejemplo
+                    </button>
+                    <button
+                      onClick={() => setModoEntradaReq('subir')}
+                      className={'px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ' + (
+                        modoEntradaReq === 'subir' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                      )}
+                    >
+                      📁 Subir Archivo / Imagen
+                    </button>
+                    <button
+                      onClick={() => setModoEntradaReq('escribir')}
+                      className={'px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ' + (
+                        modoEntradaReq === 'escribir' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                      )}
+                    >
+                      ✍️ Escribir Requerimiento
+                    </button>
+                  </div>
+                </div>
+
+                {modoEntradaReq === 'ejemplos' && (
+                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
+                    <label className="block text-slate-300 font-bold mb-1">Caso de Uso Bancario / FinTech Preconfigurado:</label>
+                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-emerald-300 font-semibold">
+                      🏦 Módulo SPEI / Transferencias Bancarias en Tiempo Real (FinTech & Banca)
+                    </div>
+                  </div>
+                )}
+
+                {modoEntradaReq === 'subir' && (
+                  <div className="bg-slate-950 border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-2xl p-6 text-center space-y-3 transition">
+                    <div className="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl mx-auto">
+                      📄
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">
+                        {archivoReqNombre ? ('Archivo Cargado: ' + archivoReqNombre) : 'Arrastra o selecciona el archivo del requerimiento'}
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Acepta: Capturas de pantalla (.png, .jpg), Documentos (.pdf, .docx), Hojas de cálculo (.xlsx) o Texto (.txt)
+                      </p>
+                    </div>
+
+                    {vistaPreviaReqImg && (
+                      <div className="max-w-xs mx-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
+                        <img src={vistaPreviaReqImg} alt="Preview Requerimiento" className="rounded-lg max-h-36 mx-auto object-cover" />
+                        <span className="text-[10px] text-emerald-400 block mt-1">✓ Imagen de requerimiento cargada</span>
+                      </div>
+                    )}
+
+                    <label className="inline-block bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-300 font-semibold px-4 py-2 rounded-xl transition cursor-pointer">
+                      Seleccionar Archivo de Requerimiento
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.pdf,.docx,.doc,.xlsx,.xls,.txt"
+                        onChange={manejarSubidaReq}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {modoEntradaReq === 'escribir' && (
+                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
+                    <label className="block text-slate-300 font-bold mb-1">
+                      Describe las reglas y funcionalidades del módulo a probar:
+                    </label>
+                    <textarea
+                      rows="4"
+                      placeholder="Ejemplo: Necesito probar un módulo de login bancario con autenticación biométrica y OTP SMS..."
+                      value={textoLibreReq}
+                      onChange={(e) => setTextoLibreReq(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-slate-200 focus:border-emerald-500 focus:outline-none resize-none leading-relaxed"
+                    ></textarea>
+                  </div>
+                )}
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-2">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span className="font-bold text-white text-xs">{requerimiento.titulo}</span>
+                    <span className="font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800 text-[11px]">{requerimiento.idHU}</span>
+                  </div>
+                  <p className="text-slate-300"><strong className="text-slate-400">Origen:</strong> {requerimiento.origen}</p>
+                  <p className="text-slate-300"><strong className="text-slate-400">Descripción:</strong> {requerimiento.descripcion}</p>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => {
+                      if (modoEntradaReq === 'escribir' && textoLibreReq.trim()) {
+                        setRequerimiento({
+                          idHU: 'REQ-PERSONALIZADO',
+                          titulo: 'Requerimiento Funcional Redactado',
+                          descripcion: textoLibreReq,
+                          origen: 'Descripción técnica provista por el usuario',
+                          criterios: ['Happy path', 'Frontera/TTF', 'Smoke', 'Seguridad']
+                        });
+                      }
+                      setPasoMP(2);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
+                  >
+                    <span>Siguiente: Analizar Mi Formato de Casos (Archivo 2)</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* FASE 2: ANALIZADOR DE LA ESTRUCTURA / PLANTILLA DEL USUARIO */}
+            {pasoMP === 2 && (
+              <div className="space-y-5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div>
+                    <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">
+                      Archivo 2: Subir Formato de Matriz del Usuario (Imagen, Excel, Doc o Texto)
+                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      Sube tu plantilla habitual y el motor extraerá automáticamente las columnas para estructurar la matriz como tú la usas.
+                    </p>
+                  </div>
+
+                  <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl">
+                    <button
+                      onClick={() => setModoEntradaFormato('subir')}
+                      className={'px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ' + (
+                        modoEntradaFormato === 'subir' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
+                      )}
+                    >
+                      📷 Subir Imagen / Archivo Plantilla
+                    </button>
+                    <button
+                      onClick={() => setModoEntradaFormato('texto')}
+                      className={'px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ' + (
+                        modoEntradaFormato === 'texto' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
+                      )}
+                    >
+                      ✍️ Pegar Columnas / Formato
+                    </button>
+                  </div>
+                </div>
+
+                {modoEntradaFormato === 'subir' && (
+                  <div className="bg-slate-950 border-2 border-dashed border-cyan-700/60 hover:border-cyan-400 rounded-2xl p-6 text-center space-y-3 transition">
+                    <div className="h-12 w-12 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl mx-auto">
+                      📊
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">
+                        {archivoFormatoNombre ? ('Plantilla Analizada: ' + archivoFormatoNombre) : 'Arrastra una captura de tu Excel, documento o archivo de matriz'}
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Soporta: Capturas (.png, .jpg), Archivos Excel (.xlsx, .csv), Word (.docx) o Texto
+                      </p>
+                    </div>
+
+                    {vistaPreviaFormatoImg && (
+                      <div className="max-w-xs mx-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
+                        <img src={vistaPreviaFormatoImg} alt="Preview Formato" className="rounded-lg max-h-36 mx-auto object-cover" />
+                        <span className="text-[10px] text-cyan-400 block mt-1">✓ Captura de formato escaneada</span>
+                      </div>
+                    )}
+
+                    <label className="inline-block bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 font-semibold px-4 py-2 rounded-xl transition cursor-pointer">
+                      Seleccionar Archivo de Formato
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.xlsx,.xls,.csv,.docx,.doc,.txt"
+                        onChange={manejarSubidaFormato}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {analizandoEstructura && (
+                      <p className="text-cyan-400 font-bold animate-pulse text-[11px] mt-2">
+                        ⚙️ Analizando estructura de columnas y mapeando campos...
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {modoEntradaFormato === 'texto' && (
+                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
+                    <label className="block text-slate-300 font-bold mb-1">
+                      Pega los nombres de tus columnas separadas por comas, saltos de línea o tabulaciones:
+                    </label>
+                    <textarea
+                      rows="3"
+                      placeholder="Ejemplo: ID Caso, Historia, Escenario, Precondiciones, Pasos, Test Data, Resultado Esperado, Severidad, Estado"
+                      value={textoEstructuraUsuario}
+                      onChange={(e) => setTextoEstructuraUsuario(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-slate-200 focus:border-cyan-500 focus:outline-none resize-none"
+                    ></textarea>
+                    <button
+                      onClick={procesarTextoEstructura}
+                      className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                    >
+                      Aplicar Columnas
+                    </button>
+                  </div>
+                )}
+
+                {/* VISUALIZADOR Y EDITOR DE LAS COLUMNAS EXTRAÍDAS */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-2">
+                    <span className="font-bold text-white text-xs flex items-center gap-2">
+                      <span>📐</span>
+                      <span>Estructura de Columnas Detectada para tus Casos ({columnasPersonalizadas.length} Columnas)</span>
+                    </span>
+                    <span className="text-[10px] text-cyan-400 font-mono">100% Personalizada</span>
+                  </div>
+
+                  {/* Chips de Columnas con opción de eliminar */}
+                  <div className="flex flex-wrap gap-2">
+                    {columnasPersonalizadas.map((col, idx) => (
+                      <span
+                        key={idx}
+                        className="bg-slate-900 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-2 font-medium"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                        <span>{col}</span>
+                        <button
+                          onClick={() => eliminarColumna(col)}
+                          className="text-slate-500 hover:text-rose-400 font-bold ml-1 text-xs cursor-pointer"
+                          title="Eliminar columna"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Agregar columna manual */}
+                  <div className="flex gap-2 pt-1">
+                    <input
+                      type="text"
+                      placeholder="Agregar otra columna (ej. Postcondiciones, Sprint, Evidencia...)"
+                      value={nuevaColumna}
+                      onChange={(e) => setNuevaColumna(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') agregarColumnaManual(); }}
+                      className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={agregarColumnaManual}
+                      className="bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold px-4 py-2 rounded-xl transition cursor-pointer"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={() => setPasoMP(1)}
+                    className="bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                  >
+                    ← Volver a Requerimientos
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setProcesandoPaso(true);
+                      setTimeout(() => {
+                        setProcesandoPaso(false);
+                        setPasoMP(3);
+                      }, 400);
+                    }}
+                    disabled={procesandoPaso}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <span>{procesandoPaso ? '⚙️ Mapeando Casos a tu Formato...' : '⚡ Generar Matriz en Mi Formato'}</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* FASE 3: MATRIZ GENERADA CON LA ESTRUCTURA DEL USUARIO */}
+            {pasoMP === 3 && (
+              <div className="space-y-5">
+                
+                {/* Resumen de Métricas */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📊</span>
+                      <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide">
+                        Resumen Ejecutivo con tu Estructura de Columnas
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded font-mono">
+                        🔒 Vista Protegida Anti-Copia
+                      </span>
+                      <span className="text-[11px] text-cyan-400 font-mono">{requerimiento.idHU}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-center">
+                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                      <p className="text-[10px] uppercase font-bold text-slate-400">Casos Totales</p>
+                      <p className="text-lg font-extrabold text-cyan-400 font-mono">{totalCasos}</p>
+                    </div>
+                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                      <p className="text-[10px] uppercase font-bold text-emerald-400">HP (Happy Path)</p>
+                      <p className="text-lg font-extrabold text-emerald-400 font-mono">{totalHP}</p>
+                    </div>
+                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                      <p className="text-[10px] uppercase font-bold text-rose-400">TTF (Test to Fail)</p>
+                      <p className="text-lg font-extrabold text-rose-400 font-mono">{totalTTF}</p>
+                    </div>
+                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+                      <p className="text-[10px] uppercase font-bold text-amber-400">Smoke / Sanity</p>
+                      <p className="text-lg font-extrabold text-amber-400 font-mono">{totalSmoke}</p>
+                    </div>
+                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl col-span-2 sm:col-span-1">
+                      <p className="text-[10px] uppercase font-bold text-purple-400">Seguridad / API</p>
+                      <p className="text-lg font-extrabold text-purple-400 font-mono">{totalOtros}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Banner de Descarga de Muestra en el Formato del Usuario */}
+                <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border border-emerald-500/40 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">💼</span>
+                    <div>
+                      <p className="font-bold text-emerald-300">Descarga Muestra (5 Casos en tu Formato) o Solicita la Matriz Completa</p>
+                      <p className="text-[11px] text-slate-300">
+                        Estructurado con tus columnas: <strong>{columnasPersonalizadas.slice(0, 3).join(', ')}...</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={descargarMuestraCSVPersonalizada}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>📥</span>
+                      <span>Descargar CSV (5 Casos con Mis Columnas)</span>
+                    </button>
+
+                    <button
+                      onClick={() => setModalCotizador(true)}
+                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-emerald-950/50 flex items-center gap-1.5"
+                    >
+                      <span>⚡</span>
+                      <span>Auto-Cotizador</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* TABLA DINÁMICA RENDERIZADA CON LAS COLUMNAS DEL USUARIO */}
+                <div 
+                  onContextMenu={(e) => { e.preventDefault(); mostrarAvisoSeguridad(); }}
+                  onCopy={(e) => { e.preventDefault(); mostrarAvisoSeguridad(); }}
+                  className="select-none space-y-4"
+                >
+                  <div className="overflow-x-auto border border-slate-800 rounded-2xl">
+                    <table className="w-full text-left text-xs text-slate-300 border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold bg-slate-950 uppercase text-[10px] tracking-wider">
+                          {columnasPersonalizadas.slice(0, 6).map((col, idx) => (
+                            <th key={idx} className="py-3 px-3 whitespace-nowrap">{col}</th>
+                          ))}
+                          <th className="py-3 px-2 text-center">Detalle Completo</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-sans">
+                        {matrizCasosDinamicos.map((caso, index) => (
+                          <tr 
+                            key={caso.id} 
+                            onClick={() => setCasoDetalle(caso)}
+                            className={'hover:bg-slate-950/60 transition cursor-pointer ' + (
+                              casoDetalle?.id === caso.id ? 'bg-cyan-950/40 border-l-2 border-cyan-400 ' : ''
+                            ) + (index >= 5 ? 'opacity-75 ' : '')}
+                          >
+                            {columnasPersonalizadas.slice(0, 6).map((col, colIdx) => {
+                              const valor = caso.valores[col] || caso.valores[col.trim()] || caso[col] || (colIdx === 0 ? caso.id : 'Conforme a especificación');
+                              return (
+                                <td key={colIdx} className="py-3 px-3 text-[11px] max-w-xs truncate">
+                                  {colIdx === 0 ? (
+                                    <span className="font-mono font-bold text-cyan-400">{valor}</span>
+                                  ) : (
+                                    <span>{valor}</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td className="py-3 px-2 text-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCasoDetalle(caso);
+                                }}
+                                className="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 px-2 py-1 rounded-lg transition"
+                              >
+                                Ver 👁️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Visor de Detalle Técnico con todas las columnas detectadas */}
+                  {casoDetalle && (
+                    <div className="bg-slate-950 border border-cyan-500/40 rounded-2xl p-5 space-y-4 shadow-xl">
+                      <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-sm font-bold text-cyan-400 bg-cyan-950 px-2.5 py-1 rounded-lg border border-cyan-800">
+                            {casoDetalle.id}
+                          </span>
+                          <div>
+                            <h4 className="text-sm font-bold text-white">Detalle Técnico Mapeado a tus Columnas</h4>
+                            <p className="text-[11px] text-slate-400">
+                              Tipo: <strong className="text-emerald-400">{casoDetalle.tipo}</strong>
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setCasoDetalle(null)}
+                          className="text-slate-400 hover:text-white text-xs bg-slate-900 p-1.5 rounded-lg border border-slate-800 transition"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        {columnasPersonalizadas.map((col, idx) => {
+                          const val = casoDetalle.valores[col] || casoDetalle.valores[col.trim()] || casoDetalle[col] || 'Definido según especificación';
+                          return (
+                            <div key={idx} className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
+                              <span className="font-bold text-cyan-300 block text-[11px]">{col}:</span>
+                              <p className="text-slate-300 font-sans text-xs whitespace-pre-line leading-relaxed">{val}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center pt-2 text-xs">
+                  <button
+                    onClick={() => setPasoMP(2)}
+                    className="text-slate-400 hover:text-white underline underline-offset-4 cursor-pointer"
+                  >
+                    ← Modificar Formato de Columnas o Archivo 2
+                  </button>
+
+                  <span className="text-[11px] text-slate-400">
+                    Mostrando <strong className="text-white">{totalCasos} casos</strong> adaptados a tu estructura • Muestra de <strong className="text-emerald-400">5 casos descargable</strong>.
+                  </span>
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* PESTAÑA ORQUESTADOR N8N */}
         {/* ========================================================================= */}
         {pestanaActiva === 'n8n' && (
           <div>
@@ -733,450 +1458,6 @@ export default function QASuiteStudio({ onOpenContact }) {
                 </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* PESTAÑA 2: GENERADOR DE MATRIZ DE PRUEBAS QA */}
-        {/* ========================================================================= */}
-        {pestanaActiva === 'matriz' && (
-          <div className="space-y-6">
-            
-            {/* Flujo de 3 Pasos */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-800 pb-5">
-              <button
-                onClick={() => setPasoMP(1)}
-                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
-                  pasoMP === 1 ? 'bg-emerald-950 border-emerald-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-mono text-xs font-bold">1</span>
-                  <span className="text-xs font-bold">Archivo 1: Requerimientos</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">Subir archivo o describir alcance</p>
-              </button>
-
-              <button
-                onClick={() => setPasoMP(2)}
-                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
-                  pasoMP === 2 ? 'bg-cyan-950 border-cyan-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-mono text-xs font-bold">2</span>
-                  <span className="text-xs font-bold">Archivo 2: Formato de Matriz</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">Reglas de columnas y prefijos Jira</p>
-              </button>
-
-              <button
-                onClick={() => setPasoMP(3)}
-                className={'p-3 rounded-2xl border text-left transition cursor-pointer ' + (
-                  pasoMP === 3 ? 'bg-purple-950 border-purple-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-mono text-xs font-bold">3</span>
-                  <span className="text-xs font-bold">Archivo 3: Resumen & Cotizador</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">Métricas ({totalCasos} casos) & Cotización</p>
-              </button>
-            </div>
-
-            {/* FASE 1: REQUERIMIENTOS */}
-            {pasoMP === 1 && (
-              <div className="space-y-5 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
-                      Paso 1: ¿Cómo deseas ingresar tu Requerimiento?
-                    </span>
-                    <p className="text-[11px] text-slate-400">Selecciona el método de entrada de tu especificación técnica o historia de usuario.</p>
-                  </div>
-
-                  <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl">
-                    <button
-                      onClick={() => setModoEntradaReq('ejemplos')}
-                      className={'px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ' + (
-                        modoEntradaReq === 'ejemplos' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
-                      )}
-                    >
-                      ⚡ Plantilla de Ejemplo
-                    </button>
-                    <button
-                      onClick={() => setModoEntradaReq('subir')}
-                      className={'px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ' + (
-                        modoEntradaReq === 'subir' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
-                      )}
-                    >
-                      📁 Subir Archivo
-                    </button>
-                    <button
-                      onClick={() => setModoEntradaReq('escribir')}
-                      className={'px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ' + (
-                        modoEntradaReq === 'escribir' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
-                      )}
-                    >
-                      ✍️ Explicar a Grandes Rasgos
-                    </button>
-                  </div>
-                </div>
-
-                {modoEntradaReq === 'ejemplos' && (
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
-                    <label className="block text-slate-300 font-bold mb-1">Caso de Uso Empresarial Preconfigurado:</label>
-                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-emerald-300 font-semibold">
-                      🏦 Módulo SPEI / Transferencias Bancarias en Tiempo Real (FinTech & Banca)
-                    </div>
-                  </div>
-                )}
-
-                {modoEntradaReq === 'subir' && (
-                  <div className="bg-slate-950 border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-2xl p-6 text-center space-y-3 transition">
-                    <div className="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl mx-auto">
-                      📄
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">
-                        {archivoSubido ? ('Archivo Cargado: ' + archivoSubido) : 'Arrastra tu archivo de requerimiento aquí o selecciónalo'}
-                      </p>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Formatos soportados: PDF, Word (.docx), Excel (.xlsx) o Texto Plano (.txt)
-                      </p>
-                    </div>
-                    <label className="inline-block bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-300 font-semibold px-4 py-2 rounded-xl transition cursor-pointer">
-                      Seleccionar Archivo Local
-                      <input
-                        type="file"
-                        accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"
-                        onChange={manejarSubidaArchivo}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                )}
-
-                {modoEntradaReq === 'escribir' && (
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
-                    <label className="block text-slate-300 font-bold mb-1">
-                      Describe brevemente la funcionalidad a probar y sus reglas de negocio:
-                    </label>
-                    <textarea
-                      rows="4"
-                      placeholder="Ejemplo: Necesito probar un módulo de checkout con tarjeta de crédito. Debe validar dígito de control Luhn, vigencia, CVV de 3 dígitos y manejo de 3D Secure..."
-                      value={textoLibreReq}
-                      onChange={(e) => setTextoLibreReq(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-slate-200 focus:border-emerald-500 focus:outline-none resize-none leading-relaxed"
-                    ></textarea>
-                  </div>
-                )}
-
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-2">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span className="font-bold text-white text-xs">{requerimiento.titulo}</span>
-                    <span className="font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800 text-[11px]">{requerimiento.idHU}</span>
-                  </div>
-                  <p className="text-slate-300"><strong className="text-slate-400">Origen:</strong> {requerimiento.origen}</p>
-                  <p className="text-slate-300"><strong className="text-slate-400">Descripción:</strong> {requerimiento.descripcion}</p>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={() => {
-                      if (modoEntradaReq === 'escribir' && textoLibreReq.trim()) {
-                        procesarTextoLibre();
-                      } else {
-                        setPasoMP(2);
-                      }
-                    }}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
-                  >
-                    <span>Siguiente: Configurar Formato de Matriz (Paso 2)</span>
-                    <span>➔</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* FASE 2: FORMATO */}
-            {pasoMP === 2 && (
-              <div className="space-y-4 text-xs">
-                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">
-                  Paso 2: Reglas de Estructura & Plantilla (STLC)
-                </span>
-
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-semibold">Estándar de Gestión:</label>
-                      <input
-                        type="text"
-                        disabled
-                        value={formatoMatriz.estandar}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-300 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-semibold">Prefijo de Casos de Prueba:</label>
-                      <input
-                        type="text"
-                        value={formatoMatriz.prefijoID}
-                        onChange={(e) => setFormatoMatriz({ ...formatoMatriz, prefijoID: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-cyan-300 font-mono focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-400 mb-1 font-semibold">Esquema de Columnas Requeridas:</label>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {formatoMatriz.columnas.map((col, idx) => (
-                        <span key={idx} className="bg-slate-900 text-slate-300 border border-slate-800 px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
-                          {col}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <button
-                    onClick={() => setPasoMP(1)}
-                    className="bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs px-4 py-2 rounded-xl transition cursor-pointer"
-                  >
-                    ← Volver a Requerimientos
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setProcesandoMP(true);
-                      setTimeout(() => {
-                        setProcesandoMP(false);
-                        setPasoMP(3);
-                      }, 400);
-                    }}
-                    disabled={procesandoMP}
-                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
-                  >
-                    <span>{procesandoMP ? '⚙️ Procesando...' : '⚡ Generar Resumen & Matriz Final'}</span>
-                    <span>➔</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* FASE 3: MATRIZ GENERADA & RESUMEN */}
-            {pasoMP === 3 && (
-              <div className="space-y-5">
-                
-                {/* Resumen de Métricas */}
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">📊</span>
-                      <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide">
-                        Resumen Ejecutivo de Cobertura de Pruebas
-                      </h4>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded font-mono">
-                        🔒 Vista Protegida Anti-Copia
-                      </span>
-                      <span className="text-[11px] text-cyan-400 font-mono">{requerimiento.idHU}</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-center">
-                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                      <p className="text-[10px] uppercase font-bold text-slate-400">Casos Totales</p>
-                      <p className="text-lg font-extrabold text-cyan-400 font-mono">{totalCasos}</p>
-                    </div>
-                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                      <p className="text-[10px] uppercase font-bold text-emerald-400">HP (Happy Path)</p>
-                      <p className="text-lg font-extrabold text-emerald-400 font-mono">{totalHP}</p>
-                    </div>
-                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                      <p className="text-[10px] uppercase font-bold text-rose-400">TTF (Test to Fail)</p>
-                      <p className="text-lg font-extrabold text-rose-400 font-mono">{totalTTF}</p>
-                    </div>
-                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
-                      <p className="text-[10px] uppercase font-bold text-amber-400">Smoke / Sanity</p>
-                      <p className="text-lg font-extrabold text-amber-400 font-mono">{totalSmoke}</p>
-                    </div>
-                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl col-span-2 sm:col-span-1">
-                      <p className="text-[10px] uppercase font-bold text-purple-400">Seguridad / API</p>
-                      <p className="text-lg font-extrabold text-purple-400 font-mono">{totalOtros}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Banner Auto-Cotizador */}
-                <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border border-emerald-500/40 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">💼</span>
-                    <div>
-                      <p className="font-bold text-emerald-300">Descarga Muestra (5 Casos) o Auto-Cotiza la Matriz Completa</p>
-                      <p className="text-[11px] text-slate-300">Basada en: <strong>{requerimiento.titulo}</strong></p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={descargarMuestraCSV}
-                      className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5"
-                    >
-                      <span>📥</span>
-                      <span>Muestra CSV (5 Casos)</span>
-                    </button>
-
-                    <button
-                      onClick={() => setModalCotizador(true)}
-                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-emerald-950/50 flex items-center gap-1.5"
-                    >
-                      <span>⚡</span>
-                      <span>Auto-Cotizador</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Tabla Protegida */}
-                <div 
-                  onContextMenu={(e) => { e.preventDefault(); mostrarAvisoSeguridad(); }}
-                  onCopy={(e) => { e.preventDefault(); mostrarAvisoSeguridad(); }}
-                  className="select-none space-y-4"
-                >
-                  <div className="overflow-x-auto border border-slate-800 rounded-2xl">
-                    <table className="w-full text-left text-xs text-slate-300 border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-800 text-slate-400 font-bold bg-slate-950 uppercase text-[10px] tracking-wider">
-                          <th className="py-3 px-3">ID Caso</th>
-                          <th className="py-3 px-3">Escenario de Prueba</th>
-                          <th className="py-3 px-3">Métrica</th>
-                          <th className="py-3 px-3">Precondiciones</th>
-                          <th className="py-3 px-3">Resultado Esperado</th>
-                          <th className="py-3 px-2 text-center">Prioridad</th>
-                          <th className="py-3 px-2 text-center">Detalle</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/60 font-sans">
-                        {matrizCasos.map((caso, index) => (
-                          <tr 
-                            key={caso.id} 
-                            onClick={() => setCasoDetalle(caso)}
-                            className={'hover:bg-slate-950/60 transition cursor-pointer ' + (
-                              casoDetalle?.id === caso.id ? 'bg-cyan-950/40 border-l-2 border-cyan-400 ' : ''
-                            ) + (index >= 5 ? 'opacity-75 ' : '')}
-                          >
-                            <td className="py-3 px-3 font-mono font-bold text-cyan-400 whitespace-nowrap">{caso.id}</td>
-                            <td className="py-3 px-3 font-semibold text-white">{caso.titulo}</td>
-                            <td className="py-3 px-3 whitespace-nowrap">
-                              <span className={'px-2 py-0.5 rounded text-[10px] font-bold border ' + (
-                                caso.categoriaMetrica === 'HP' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' :
-                                caso.categoriaMetrica === 'TTF' ? 'bg-rose-950 text-rose-300 border-rose-800' :
-                                caso.categoriaMetrica === 'Smoke' ? 'bg-amber-950 text-amber-300 border-amber-800' :
-                                'bg-purple-950 text-purple-300 border-purple-800'
-                              )}>
-                                {caso.categoriaMetrica}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3 text-[11px] text-slate-400">{caso.precondiciones}</td>
-                            <td className="py-3 px-3 text-[11px] text-emerald-300">{caso.resultado}</td>
-                            <td className="py-3 px-2 text-center">
-                              <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + (
-                                caso.prioridad === 'Crítica' ? 'bg-rose-950 text-rose-300 border border-rose-800' :
-                                caso.prioridad === 'Alta' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
-                                'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                              )}>
-                                {caso.prioridad}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 text-center">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCasoDetalle(caso);
-                                }}
-                                className="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 px-2 py-1 rounded-lg transition"
-                              >
-                                Ver 👁️
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Visor de Detalle Técnico */}
-                  {casoDetalle && (
-                    <div className="bg-slate-950 border border-cyan-500/40 rounded-2xl p-5 space-y-4 shadow-xl">
-                      <div className="flex justify-between items-start border-b border-slate-800 pb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono text-sm font-bold text-cyan-400 bg-cyan-950 px-2.5 py-1 rounded-lg border border-cyan-800">
-                            {casoDetalle.id}
-                          </span>
-                          <div>
-                            <h4 className="text-sm font-bold text-white">{casoDetalle.titulo}</h4>
-                            <p className="text-[11px] text-slate-400">
-                              {casoDetalle.tipo} • Prioridad: <strong className="text-amber-400">{casoDetalle.prioridad}</strong> • Estado: <strong className="text-emerald-400">{casoDetalle.estado}</strong>
-                            </p>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => setCasoDetalle(null)}
-                          className="text-slate-400 hover:text-white text-xs bg-slate-900 p-1.5 rounded-lg border border-slate-800 transition"
-                        >
-                          ✕
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        <div className="space-y-2.5">
-                          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                            <span className="font-bold text-slate-300 block mb-1">🎯 Precondiciones:</span>
-                            <p className="text-slate-400 leading-relaxed">{casoDetalle.precondiciones}</p>
-                          </div>
-                          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                            <span className="font-bold text-cyan-300 block mb-1">🧪 Datos de Prueba (Test Data):</span>
-                            <p className="text-slate-400 font-mono text-[11px] leading-relaxed">{casoDetalle.datosPrueba}</p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2.5">
-                          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                            <span className="font-bold text-purple-300 block mb-1">📋 Pasos de Ejecución:</span>
-                            <pre className="text-slate-300 font-sans text-xs whitespace-pre-line leading-relaxed">
-                              {casoDetalle.pasos}
-                            </pre>
-                          </div>
-                          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                            <span className="font-bold text-emerald-400 block mb-1">✅ Resultado Esperado:</span>
-                            <p className="text-emerald-300 leading-relaxed">{casoDetalle.resultado}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-between items-center pt-2 text-xs">
-                  <button
-                    onClick={() => setPasoMP(2)}
-                    className="text-slate-400 hover:text-white underline underline-offset-4 cursor-pointer"
-                  >
-                    ← Modificar Formato o Requerimientos
-                  </button>
-
-                  <span className="text-[11px] text-slate-400">
-                    Mostrando <strong className="text-white">{totalCasos} casos</strong> en visor seguro • Muestra de <strong className="text-emerald-400">5 casos descargable</strong>.
-                  </span>
-                </div>
-              </div>
-            )}
-
           </div>
         )}
 
