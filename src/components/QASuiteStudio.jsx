@@ -625,7 +625,7 @@ export default function QASuiteStudio({ onOpenContact }) {
               />
             </div>
           
-            )}
+            
 
           </div>
         )}
