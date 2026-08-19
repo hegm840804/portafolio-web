@@ -28,33 +28,35 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [notasReq, setNotasReq] = useState('');
   const [requerimientoAnalizado, setRequerimientoAnalizado] = useState(false);
 
-  // Carga de archivo sin disparar el análisis automático
   const manejarSeleccionArchivo = (e) => {
     const file = e.target.files[0];
     if (file) {
       setArchivoEstructura(file);
-      setFormatoValidado(false); // Requiere presionar el botón verde
+      setFormatoValidado(false);
     }
   };
 
-  // Botón de Análisis Inteligente igual al Módulo 2
+  // Análisis inteligente del archivo subido al presionar el botón verde
   const ejecutarAnalisisFormato = () => {
     setAnalizandoFormato(true);
     setTimeout(() => {
       if (archivoEstructura) {
         const nombre = archivoEstructura.name.toLowerCase();
-        if (nombre.includes('taggeo') || nombre.includes('fincomun')) {
-          setColumnasDetectadas('ID Funcional, ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba');
-        } else {
+        // Si el archivo subido es la captura o plantilla de Fincomún / PMO
+        if (nombre.includes('taggeo') || nombre.includes('fincomun') || nombre.includes('app')) {
+          setColumnasDetectadas('ID Funcional, ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba, Estatus, Tester');
+        } else if (nombre.includes('captura') || nombre.includes('png') || nombre.includes('jpg') || nombre.includes('plantilla')) {
           setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
+        } else {
+          setColumnasDetectadas('ID, Proceso, Subproceso, Descripción, Tipo, Estatus');
         }
       } else {
-        // Fallback estándar
+        // Si no subió archivo pero presionó el botón, mantiene la plantilla estándar PMO
         setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
       }
       setAnalizandoFormato(false);
       setFormatoValidado(true);
-    }, 600);
+    }, 500);
   };
 
   const columnasArray = columnasDetectadas ? columnasDetectadas.split(',').map(c => c.trim()).filter(Boolean) : ['Id', 'Caso de Prueba', 'Descripción'];
@@ -95,7 +97,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             onClick={() => setPestanaActiva('matriz')} 
             className={`px-6 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${pestanaActiva === 'matriz' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
           >
-            📋 Generador de MP (Modular Estilo Botón Verde)
+            📋 Generador de MP (Análisis Reactivo)
           </button>
           <button 
             onClick={() => setPestanaActiva('n8n')} 
@@ -113,7 +115,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-4 gap-4">
               <div>
                 <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Arquitectura Modular en Progreso</span>
-                <h3 className="text-xl font-extrabold text-white">Análisis con Botón de Acción Dedicado</h3>
+                <h3 className="text-xl font-extrabold text-white">Módulo 1: Análisis de Formato y Columnas</h3>
               </div>
               <button onClick={reiniciarTodo} className="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer">
                 🗑️ Reiniciar Todo
@@ -153,6 +155,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                       className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-300 cursor-pointer" 
                     />
                     {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Archivo seleccionado: {archivoEstructura.name}</p>}
+                    <p className="text-[10px] text-slate-400 pt-1">💡 Selecciona tu plantilla y presiona el botón verde para que el sistema extraiga y actualice las columnas reales.</p>
                   </div>
 
                   <div className="space-y-3">
@@ -166,7 +169,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                   </div>
                 </div>
 
-                {/* BOTÓN VERDE IDÉNTICO AL MÓDULO 2 */}
+                {/* BOTÓN VERDE DE ACCIÓN */}
                 <div>
                   <button 
                     onClick={ejecutarAnalisisFormato}
