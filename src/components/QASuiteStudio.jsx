@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import N8NOrchestrator from './N8NOrchestrator';
 
 export default function QASuiteStudio({ onOpenContact }) {
-  // SEGURIDAD INVISIBLE: Bloquea herramientas de dev y selección
   useEffect(() => {
     const handler = (e) => {
       if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67))) {
@@ -15,35 +14,23 @@ export default function QASuiteStudio({ onOpenContact }) {
 
   const [pestanaActiva, setPestanaActiva] = useState('matriz');
 
-  // ESTADOS EXCLUSIVOS DEL PASO 1 (Formato y Columnas)
+  // Estados del Paso 1
   const [nombreProyecto, setNombreProyecto] = useState('SPEI');
   const [archivoEstructura, setArchivoEstructura] = useState(null);
   const [columnasManuales, setColumnasManuales] = useState('ID, Proceso, Subproceso, Descripción, Tipo');
   const [mostrarVistaPrevia, setMostrarVistaPrevia] = useState(false);
 
-  // Obtener iniciales dinámicas para el ID (Ej. SPEI -> TC-SPEI-01)
   const inicialesProyecto = nombreProyecto ? nombreProyecto.trim().substring(0, 4).toUpperCase() : 'PROJ';
 
-  // Procesar columnas activas
-  const obtenerColumnasActivas = () => {
-    if (columnasManuales.trim()) {
-      return columnasManuales.split(',').map(c => c.trim()).filter(Boolean);
-    }
-    return [`ID_${inicialesProyecto}`, 'Proceso', 'Subproceso', 'Descripción', 'Tipo'];
-  };
-
-  const columnasArray = obtenerColumnasActivas();
+  const columnasArray = columnasManuales ? columnasManuales.split(',').map(c => c.trim()).filter(Boolean) : ['ID', 'Proceso', 'Subproceso', 'Descripción', 'Tipo'];
 
   const manejarSubidaEstructura = (e) => {
     const file = e.target.files[0];
     if (file) {
       setArchivoEstructura(file);
       const nombre = file.name.toLowerCase();
-      // Detección automática para adaptarlo al formato si es de Fincomún / Taggeo
       if (nombre.includes('taggeo') || nombre.includes('app') || nombre.includes('fincomun')) {
         setColumnasManuales('ID Funcional, ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba');
-      } else {
-        setColumnasManuales('ID, Proceso, Subproceso, Descripción, Tipo');
       }
       setMostrarVistaPrevia(true);
     }
@@ -67,7 +54,6 @@ export default function QASuiteStudio({ onOpenContact }) {
       onContextMenu={(e) => e.preventDefault()} 
       style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
     >
-      {/* Pestañas Principales */}
       <div className="text-center max-w-2xl mx-auto mb-8">
         <div className="inline-flex gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shadow-xl">
           <button 
@@ -89,7 +75,6 @@ export default function QASuiteStudio({ onOpenContact }) {
         {pestanaActiva === 'matriz' ? (
           <div className="space-y-6 animate-fadeIn">
             
-            {/* Cabecera */}
             <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-4 gap-4">
               <div>
                 <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Desarrollo Modular - Paso 1</span>
@@ -100,7 +85,6 @@ export default function QASuiteStudio({ onOpenContact }) {
               </button>
             </div>
 
-            {/* CONTENEDOR EXCLUSIVO DEL PASO 1 */}
             <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-5 text-xs animate-fadeIn">
               <h4 className="font-bold text-cyan-400 uppercase text-sm">Configuración de Columnas Esenciales</h4>
               
@@ -118,7 +102,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                   <label className="block font-bold text-slate-200 pt-2">📁 Subir Archivo, Excel o Imagen de Estructura</label>
                   <input 
                     type="file" 
-                    onChange={analizarSubidaEstructura} 
+                    onChange={manejarSubidaEstructura} 
                     className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-300 cursor-pointer" 
                   />
                   {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Estructura analizada: {archivoEstructura.name}</p>}
@@ -132,7 +116,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                     className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-cyan-300 font-mono text-xs focus:border-cyan-500 outline-none" 
                     rows="4"
                   />
-                  <p className="text-[10px] text-slate-400">Analizamos el formato para extraer únicamente las columnas necesarias (ID, Proceso, Subproceso, Descripción, Tipo), garantizando que cada fila sea un escenario de prueba atómico.</p>
+                  <p className="text-[10px] text-slate-400">Analizamos el formato para extraer únicamente las columnas necesarias (ID, Proceso, Subproceso, Descripción, Tipo), garantizando que cada fila sea un escenario atómico.</p>
                   
                   <button 
                     onClick={analizarYMostrar}
@@ -143,7 +127,6 @@ export default function QASuiteStudio({ onOpenContact }) {
                 </div>
               </div>
 
-              {/* VISTA PREVIA VISIBLE PARA EL USUARIO */}
               {mostrarVistaPrevia && (
                 <div className="mt-6 p-5 bg-slate-900 border border-cyan-500/40 rounded-2xl space-y-3 animate-fadeIn">
                   <div className="flex justify-between items-center">
