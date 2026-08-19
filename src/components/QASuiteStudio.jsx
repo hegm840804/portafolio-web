@@ -17,7 +17,11 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [nivel, setNivel] = useState('MED');
   const [archivosReqLista, setArchivosReqLista] = useState([]);
   const [archivoEstructuraObj, setArchivoEstructuraObj] = useState(null);
+  
+  // Requerimiento con notas recuperadas
   const [requerimiento, setRequerimiento] = useState({ notas: '' });
+  
+  // Estructura y columnas personalizadas
   const [columnasInput, setColumnasInput] = useState('ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba');
 
   const totalCasos = nivel === 'JR' ? 30 : nivel === 'MED' ? 60 : 100;
@@ -27,7 +31,6 @@ export default function QASuiteStudio({ onOpenContact }) {
     const file = e.target.files[0];
     if (file) {
       setArchivoEstructuraObj(file);
-      setColumnasInput('ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba');
     }
   };
 
@@ -37,7 +40,7 @@ export default function QASuiteStudio({ onOpenContact }) {
     { proc: "Creacion de Credito", sub: "Nomina", desc: "Realizar un credito de nomina hasta desembolsarlo (Apk Fcil)." },
     { proc: "Credito de Nomina", sub: "Registro (\"Pantalla 1\")", desc: "Validar al iniciar la App Fcil y dar clic en \"Registrarse\" se dispare la solicitud de la API HubSpot y se registre." },
     { proc: "Pantalla 1", sub: "Metodo POST", desc: "Validar Método:\nEndpoint: https://api.hubapi.com/crm/v3/objects/deals\npipeline -> D: Numérico, Valor Fijo: 728738158\ndealstage -> D: Numérico, Valor Fijo: 1062390043" },
-    { proc: "Modificación de Crédito", sub: "Capital de Trabajo", desc: "Validar rechazo de crédito cuando la capacidad de pago excede el límite normativo de la UIF." }
+    { proc: "Modificación de Crédito", sub: "Capital de Trabajo", desc: "Validar rechazo de crédito cuando la capacidad de pago excede el límite normativo." }
   ];
 
   const listaCasos = Array.from({ length: totalCasos }, (_, i) => {
@@ -50,7 +53,7 @@ export default function QASuiteStudio({ onOpenContact }) {
       if (colL.includes('id')) casoObj[col] = `${i + 1}`;
       else if (colL.includes('proceso')) casoObj[col] = itemBanco.proc;
       else if (colL.includes('sub')) casoObj[col] = itemBanco.sub;
-      else if (colL.includes('desc')) casoObj[col] = itemBanco.desc;
+      else if (colL.includes('desc')) casoObj[col] = `${itemBanco.desc} [Notas: ${requerimiento.notas || 'Ninguna'}]`;
       else if (colL.includes('tipo')) casoObj[col] = tipoPrueba;
       else casoObj[col] = `${itemBanco.proc} - Verificación ${i + 1}`;
     });
@@ -103,7 +106,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-4 gap-4">
               <div>
                 <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">Generador Profesional de MP</span>
-                <h3 className="text-xl font-extrabold text-white">Estructura & Casos Reales de QA</h3>
+                <h3 className="text-xl font-extrabold text-white">Estructura, Notas & Casos Reales de QA</h3>
               </div>
               <button onClick={resetearProyecto} className="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer">
                 🗑️ Limpiar / Nuevo Proyecto
@@ -113,7 +116,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button onClick={() => setPasoMP(1)} className={`p-4 rounded-2xl border text-left transition cursor-pointer ${pasoMP === 1 ? 'bg-emerald-950 border-emerald-500 shadow-lg' : 'bg-slate-950 border-slate-800'}`}>
                 <span className="text-[10px] text-emerald-400 font-bold uppercase">Paso 1</span>
-                <p className="text-sm font-bold text-white mt-1">Requerimientos</p>
+                <p className="text-sm font-bold text-white mt-1">Requerimientos & Notas</p>
               </button>
               <button onClick={() => setPasoMP(2)} className={`p-4 rounded-2xl border text-left transition cursor-pointer ${pasoMP === 2 ? 'bg-cyan-950 border-cyan-500 shadow-lg' : 'bg-slate-950 border-slate-800'}`}>
                 <span className="text-[10px] text-cyan-400 font-bold uppercase">Paso 2</span>
@@ -125,22 +128,39 @@ export default function QASuiteStudio({ onOpenContact }) {
               </button>
             </div>
 
+            {/* PASO 1: Requerimientos y Notas */}
             {pasoMP === 1 && (
               <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-4 text-xs">
-                <h4 className="font-bold text-emerald-400 uppercase">1. Requerimientos</h4>
-                <input type="file" multiple onChange={(e) => setArchivosReqLista(Array.from(e.target.files).map(f => f.name))} className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-emerald-300 cursor-pointer" />
-                {archivosReqLista.length > 0 && <p className="text-emerald-400 font-mono text-[10px]">Cargados: {archivosReqLista.join(', ')}</p>}
+                <h4 className="font-bold text-emerald-400 uppercase">1. Requerimientos & Notas u Observaciones</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <label className="block font-bold text-slate-200">📁 Subir Archivos de Requerimiento</label>
+                    <input type="file" multiple onChange={(e) => setArchivosReqLista(Array.from(e.target.files).map(f => f.name))} className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-emerald-300 cursor-pointer" />
+                    {archivosReqLista.length > 0 && <p className="text-emerald-400 font-mono text-[10px]">Cargados: {archivosReqLista.join(', ')}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-200 mb-1">📌 Notas u Observaciones del Requerimiento</label>
+                    <textarea placeholder="Ej. Este debe hacerse para tipos de crédito: efectivo, capital de trabajo, nómina..." value={requerimiento.notas} onChange={(e) => setRequerimiento({...requerimiento, notas: e.target.value})} className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-white text-xs outline-none focus:border-emerald-500" rows="4" />
+                  </div>
+                </div>
                 <div className="flex justify-end pt-2">
                   <button onClick={() => setPasoMP(2)} className="bg-emerald-500 text-slate-950 font-bold px-6 py-2.5 rounded-xl cursor-pointer">Siguiente: Estructura ➡️</button>
                 </div>
               </div>
             )}
 
+            {/* PASO 2: Estructura y Columnas */}
             {pasoMP === 2 && (
               <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-4 text-xs">
-                <h4 className="font-bold text-cyan-400 uppercase">2. Estructura y Columnas Personalizadas</h4>
-                <input type="text" value={columnasInput} onChange={(e) => setColumnasInput(e.target.value)} className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-cyan-300 font-mono text-xs focus:border-cyan-500 outline-none" />
-                <input type="file" onChange={manejarSubidaEstructura} className="w-full text-slate-400 text-xs file:bg-slate-800 file:border-0 file:px-4 file:py-2 file:rounded-xl file:text-cyan-300 cursor-pointer" />
+                <h4 className="font-bold text-cyan-400 uppercase">2. Estructura y Columnas del Proyecto</h4>
+                <div className="space-y-3">
+                  <label className="block font-bold text-slate-200">📊 Definir Columnas (Separadas por comas)</label>
+                  <input type="text" value={columnasInput} onChange={(e) => setColumnasInput(e.target.value)} className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-cyan-300 font-mono text-xs focus:border-cyan-500 outline-none" />
+                  
+                  <label className="block font-bold text-slate-200 pt-2">📁 Subir Plantilla / Formato de Estructura</label>
+                  <input type="file" onChange={manejarSubidaEstructura} className="w-full text-slate-400 text-xs file:bg-slate-800 file:border-0 file:px-4 file:py-2 file:rounded-xl file:text-cyan-300 cursor-pointer" />
+                  {archivoEstructuraObj && <p className="text-cyan-300 font-mono text-[11px]">Estructura base: {archivoEstructuraObj.name}</p>}
+                </div>
                 <div className="flex justify-between pt-2">
                   <button onClick={() => setPasoMP(1)} className="bg-slate-800 text-slate-300 font-bold px-5 py-2.5 rounded-xl cursor-pointer">⬅️ Anterior</button>
                   <button onClick={() => setPasoMP(3)} className="bg-cyan-500 text-slate-950 font-bold px-6 py-2.5 rounded-xl cursor-pointer">Generar Casos ➡️</button>
@@ -148,6 +168,7 @@ export default function QASuiteStudio({ onOpenContact }) {
               </div>
             )}
 
+            {/* PASO 3: Generación y Tabla */}
             {pasoMP === 3 && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="flex gap-2">
