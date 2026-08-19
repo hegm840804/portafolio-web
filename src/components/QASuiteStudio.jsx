@@ -16,9 +16,9 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [pestanaActiva, setPestanaActiva] = useState('matriz');
   const [pasoActual, setPasoActual] = useState(1);
 
-  // --- MÓDULO 1: FORMATO (Lector real de Excel con SheetJS) ---
+  // --- MÓDULO 1: FORMATO (Lector Inteligente de Excel) ---
   const [archivoEstructura, setArchivoEstructura] = useState(null);
-  const [columnasDetectadas, setColumnasDetectadas] = useState('Id, Caso de Prueba, Descripción, Fecha, Área Funcional, Funcionalidad');
+  const [columnasDetectadas, setColumnasDetectadas] = useState('ID Funcional, ID Prueba, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba, Estatus, Tester');
   const [analizandoFormato, setAnalizandoFormato] = useState(false);
   const [formatoValidado, setFormatoValidado] = useState(false);
 
@@ -40,8 +40,8 @@ export default function QASuiteStudio({ onOpenContact }) {
     }
   };
 
-  // Lector real de Excel usando XLSX
-  const ejecutarAnalisisExcelReal = () => {
+  // Lector Inteligente que busca la fila de cabeceras corporativas reales en el Excel
+  const ejecutarAnalisisExcelInteligente = () => {
     if (!archivoEstructura) {
       setFormatoValidado(true);
       return;
@@ -55,34 +55,44 @@ export default function QASuiteStudio({ onOpenContact }) {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        // Tomar la primera hoja del Excel
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        
-        // Convertir la hoja a JSON (matriz de filas)
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         
-        // Buscar la fila de cabeceras (la primera fila no vacía)
-        let headers = [];
+        let headersEncontradas = [];
+
+        // Escanear las primeras 20 filas buscando la fila de cabeceras de la matriz de pruebas
         for (let row of jsonData) {
           if (row && row.length > 0) {
-            // Filtrar celdas con texto válido
-            const validCols = row.filter(cell => cell !== null && cell !== undefined && String(cell).trim() !== '');
-            if (validCols.length >= 2) {
-              headers = validCols.map(c => String(c).trim());
+            const rowStr = row.map(cell => cell !== null && cell !== undefined ? String(cell).toLowerCase() : '').join(' ');
+            // Si la fila contiene identificadores típicos de matriz de pruebas
+            if ((rowStr.includes('id') || rowStr.includes('caso')) && (rowStr.includes('proceso') || rowStr.includes('descripci') || rowStr.includes('sub'))) {
+              headersEncontradas = row.filter(cell => cell !== null && cell !== undefined && String(cell).trim() !== '').map(c => String(c).trim());
               break;
             }
           }
         }
 
-        if (headers.length > 0) {
-          setColumnasDetectadas(headers.join(', '));
+        // Si no encontró por palabras clave, toma la primera fila con suficientes columnas
+        if (headersEncontradas.length === 0) {
+          for (let row of jsonData) {
+            if (row && row.length >= 3) {
+              const validCols = row.filter(cell => cell !== null && cell !== undefined && String(cell).trim() !== '');
+              if (validCols.length >= 3) {
+                headersEncontradas = validCols.map(c => String(c).trim());
+                break;
+              }
+            }
+          }
+        }
+
+        if (headersEncontradas.length > 0) {
+          setColumnasDetectadas(headersEncontradas.join(', '));
         } else {
-          setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional, Funcionalidad');
+          setColumnasDetectadas('ID Funcional, ID Prueba, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba, Estatus');
         }
       } catch (err) {
-        console.error("Error al procesar el Excel:", err);
-        setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional, Funcionalidad');
+        console.error("Error al leer Excel:", err);
       }
       setAnalizandoFormato(false);
       setFormatoValidado(true);
@@ -96,7 +106,7 @@ export default function QASuiteStudio({ onOpenContact }) {
     reader.readAsArrayBuffer(archivoEstructura);
   };
 
-  const columnasArray = columnasDetectadas ? columnasDetectadas.split(',').map(c => c.trim()).filter(Boolean) : ['Id', 'Caso de Prueba', 'Descripción'];
+  const columnasArray = columnasDetectadas ? columnasDetectadas.split(',').map(c => c.trim()).filter(Boolean) : ['ID Funcional', 'ID Prueba', 'Descripción de prueba'];
 
   const obtenerNombreProyecto = () => {
     if (nombreProyectoDetectado.trim()) return nombreProyectoDetectado.trim();
@@ -171,7 +181,7 @@ export default function QASuiteStudio({ onOpenContact }) {
 
   const reiniciarTodo = () => {
     setArchivoEstructura(null);
-    setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional, Funcionalidad');
+    setColumnasDetectadas('ID Funcional, ID Prueba, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba, Estatus, Tester');
     setFormatoValidado(false);
     setAnalizandoFormato(false);
     setArchivosReqLista([]);
@@ -196,7 +206,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             onClick={() => setPestanaActiva('matriz')} 
             className={`px-6 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${pestanaActiva === 'matriz' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
           >
-            📋 Generador de MP (Lector Excel Real)
+            📋 Generador de MP (Lector Inteligente)
           </button>
           <button 
             onClick={() => setPestanaActiva('n8n')} 
@@ -214,7 +224,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-4 gap-4">
               <div>
                 <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Arquitectura Modular Profesional</span>
-                <h3 className="text-xl font-extrabold text-white">Módulo 1: Lector Real de Archivos Excel (.xlsx / .xls)</h3>
+                <h3 className="text-xl font-extrabold text-white">Módulo 1: Lector Inteligente de Cabeceras Corporativas</h3>
               </div>
               <button onClick={reiniciarTodo} className="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer">
                 🗑️ Reiniciar Todo
@@ -228,7 +238,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                 className={`p-3 rounded-2xl border text-left transition cursor-pointer ${pasoActual === 1 ? 'bg-cyan-950 border-cyan-500 shadow-lg' : 'bg-slate-950 border-slate-800'}`}
               >
                 <span className="text-[10px] text-cyan-400 font-bold uppercase">Módulo 1</span>
-                <p className="text-xs font-bold text-white mt-0.5">Formato & Columnas (Excel)</p>
+                <p className="text-xs font-bold text-white mt-0.5">Formato & Columnas (Inteligente)</p>
               </button>
               <button 
                 onClick={() => setPasoActual(2)} 
@@ -246,14 +256,14 @@ export default function QASuiteStudio({ onOpenContact }) {
               </button>
             </div>
 
-            {/* MÓDULO 1: FORMATO CON LECTOR DE EXCEL */}
+            {/* MÓDULO 1: FORMATO CON LECTOR INTELIGENTE */}
             {pasoActual === 1 && (
               <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-5 text-xs animate-fadeIn">
-                <h4 className="font-bold text-cyan-400 uppercase text-sm">Módulo 1: Análisis de Formato (.xlsx / .xls / .csv)</h4>
+                <h4 className="font-bold text-cyan-400 uppercase text-sm">Módulo 1: Escaneo Inteligente de Cabeceras (.xlsx)</h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <label className="block font-bold text-slate-200">📁 Subir Archivo Excel o CSV de Formato</label>
+                    <label className="block font-bold text-slate-200">📁 Subir Archivo Excel Corporativo</label>
                     <input 
                       type="file" 
                       accept=".xlsx, .xls, .csv"
@@ -262,11 +272,11 @@ export default function QASuiteStudio({ onOpenContact }) {
                       className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-300 cursor-pointer" 
                     />
                     {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Excel seleccionado: {archivoEstructura.name}</p>}
-                    <p className="text-[10px] text-slate-400 pt-1">💡 Al subir tu archivo de Excel, el motor leerá las cabeceras reales de la hoja de cálculo.</p>
+                    <p className="text-[10px] text-slate-400 pt-1">💡 El motor buscará automáticamente la fila de cabeceras corporativas (aunque esté debajo de títulos o logotipos).</p>
                   </div>
 
                   <div className="space-y-3">
-                    <label className="block font-bold text-slate-200">📊 Columnas Esenciales Extraídas (Editables)</label>
+                    <label className="block font-bold text-slate-200">📊 Columnas Esenciales Detectadas (Editables)</label>
                     <textarea 
                       value={columnasDetectadas} 
                       onChange={(e) => setColumnasDetectadas(e.target.value)} 
@@ -278,17 +288,17 @@ export default function QASuiteStudio({ onOpenContact }) {
 
                 <div>
                   <button 
-                    onClick={ejecutarAnalisisExcelReal}
+                    onClick={ejecutarAnalisisExcelInteligente}
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition cursor-pointer shadow-lg flex items-center justify-center gap-2 text-sm"
                   >
                     <span>🔍</span>
-                    <span>Analizar Excel & Extraer Columnas Reales</span>
+                    <span>Analizar Excel & Escanear Cabeceras Reales</span>
                   </button>
                 </div>
 
                 {analizandoFormato && (
                   <div className="p-4 bg-cyan-950/60 border border-cyan-500/40 rounded-xl text-cyan-300 font-mono text-center animate-pulse">
-                    ⚙️ Leyendo celdas y extrayendo cabeceras reales del Excel...
+                    ⚙️ Escaneando celdas del Excel para ubicar la tabla de casos corporativos...
                   </div>
                 )}
 
@@ -296,10 +306,10 @@ export default function QASuiteStudio({ onOpenContact }) {
                   <div className="mt-6 p-5 bg-slate-900 border border-cyan-500/40 rounded-2xl space-y-3 animate-fadeIn">
                     <div className="flex justify-between items-center">
                       <h5 className="font-bold text-emerald-400 uppercase text-xs">
-                        ✅ Formato Extraído del Excel Real
+                        ✅ Formato Detectado e Identificado Correctamente
                       </h5>
                       <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2.5 py-1 rounded-lg font-mono">
-                        {columnasArray.length} Columnas Leídas
+                        {columnasArray.length} Columnas Detectadas
                       </span>
                     </div>
 
@@ -527,7 +537,7 @@ export default function QASuiteStudio({ onOpenContact }) {
 
                 <div className="flex justify-start pt-2">
                   <button onClick={() => setPasoActual(2)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg text-xs">
-                    ⬅️ Volver a Módulo 2
+                    ⬅️ Volver al Módulo 2
                   </button>
                 </div>
               </div>
