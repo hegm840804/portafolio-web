@@ -14,13 +14,14 @@ export default function QASuiteStudio({ onOpenContact }) {
 
   const [pestanaActiva, setPestanaActiva] = useState('matriz');
 
-  // Estados del Paso 1
-  const [nombreProyecto, setNombreProyecto] = useState('SPEI');
+  // ESTADOS DEL PASO 1 (Formato de Matriz y Columnas)
+  // Nota: El nombre del proyecto (iniciales) se determinará al final del requerimiento. Por defecto usa SPEI si no hay datos.
   const [archivoEstructura, setArchivoEstructura] = useState(null);
   const [columnasManuales, setColumnasManuales] = useState('ID, Proceso, Subproceso, Descripción, Tipo');
   const [mostrarVistaPrevia, setMostrarVistaPrevia] = useState(false);
 
-  const inicialesProyecto = nombreProyecto ? nombreProyecto.trim().substring(0, 4).toUpperCase() : 'PROJ';
+  // Prefijo por defecto SPEI / Transferencia
+  const inicialesProyecto = 'SPEI';
 
   const columnasArray = columnasManuales ? columnasManuales.split(',').map(c => c.trim()).filter(Boolean) : ['ID', 'Proceso', 'Subproceso', 'Descripción', 'Tipo'];
 
@@ -41,7 +42,6 @@ export default function QASuiteStudio({ onOpenContact }) {
   };
 
   const reiniciarPaso1 = () => {
-    setNombreProyecto('SPEI');
     setArchivoEstructura(null);
     setColumnasManuales('ID, Proceso, Subproceso, Descripción, Tipo');
     setMostrarVistaPrevia(false);
@@ -78,7 +78,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-4 gap-4">
               <div>
                 <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Desarrollo Modular - Paso 1</span>
-                <h3 className="text-xl font-extrabold text-white">Análisis de Estructura y Columnas de la Matriz</h3>
+                <h3 className="text-xl font-extrabold text-white">Análisis de Formato de Matriz (Columnas Atómicamente Esenciales)</h3>
               </div>
               <button onClick={reiniciarPaso1} className="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer">
                 🗑️ Limpiar / Reiniciar
@@ -86,37 +86,29 @@ export default function QASuiteStudio({ onOpenContact }) {
             </div>
 
             <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-5 text-xs animate-fadeIn">
-              <h4 className="font-bold text-cyan-400 uppercase text-sm">Configuración de Columnas Esenciales</h4>
+              <h4 className="font-bold text-cyan-400 uppercase text-sm">Configuración y Extracción de Columnas</h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <label className="block font-bold text-slate-200">🏷️ Nombre del Proyecto (Define iniciales del ID)</label>
-                  <input 
-                    type="text" 
-                    value={nombreProyecto} 
-                    onChange={(e) => setNombreProyecto(e.target.value)} 
-                    className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-cyan-300 font-mono text-xs focus:border-cyan-500 outline-none" 
-                  />
-                  <p className="text-[10px] text-slate-400">Prefijo generado para los IDs de prueba: <strong className="text-white font-mono">TC-{inicialesProyecto}-01</strong></p>
-
-                  <label className="block font-bold text-slate-200 pt-2">📁 Subir Archivo, Excel o Imagen de Estructura</label>
+                  <label className="block font-bold text-slate-200">📁 Subir Archivo, Excel o Imagen de Estructura</label>
                   <input 
                     type="file" 
                     onChange={manejarSubidaEstructura} 
                     className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-300 cursor-pointer" 
                   />
                   {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Estructura analizada: {archivoEstructura.name}</p>}
+                  <p className="text-[10px] text-slate-400 pt-2">💡 Nota: El nombre e iniciales del proyecto se extraerán automáticamente al procesar el requerimiento. Si no se suben datos, se aplicará por defecto el estándar de <strong>SPEI/Transferencia</strong>.</p>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block font-bold text-slate-200">📊 Columnas Requeridas (Separadas por comas)</label>
+                  <label className="block font-bold text-slate-200">📊 Columnas Esenciales Extraídas (Separadas por comas)</label>
                   <textarea 
                     value={columnasManuales} 
                     onChange={(e) => setColumnasManuales(e.target.value)} 
                     className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-cyan-300 font-mono text-xs focus:border-cyan-500 outline-none" 
                     rows="4"
                   />
-                  <p className="text-[10px] text-slate-400">Analizamos el formato para extraer únicamente las columnas necesarias (ID, Proceso, Subproceso, Descripción, Tipo), garantizando que cada fila sea un escenario atómico.</p>
+                  <p className="text-[10px] text-slate-400">Cada elemento es un escenario de prueba atómico individual (ID, Proceso, Subproceso, Descripción, Tipo).</p>
                   
                   <button 
                     onClick={analizarYMostrar}
@@ -161,7 +153,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                   </div>
 
                   <div className="flex justify-end pt-2">
-                    <span className="text-xs text-emerald-400 font-bold">✨ ¡Estructura validada correctamente por el usuario! Listo para continuar con el Paso 2.</span>
+                    <span className="text-xs text-emerald-400 font-bold">✨ ¡Estructura de columnas validada! En el siguiente paso implementaremos el Módulo 2 (Requerimiento).</span>
                   </div>
                 </div>
               )}
