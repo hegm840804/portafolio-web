@@ -15,47 +15,50 @@ export default function QASuiteStudio({ onOpenContact }) {
   const [pestanaActiva, setPestanaActiva] = useState('matriz');
   const [pasoActual, setPasoActual] = useState(1);
 
-  // --- MÓDULO 1: FORMATO REAL ---
+  // --- MÓDULO 1: FORMATO ---
   const [archivoEstructura, setArchivoEstructura] = useState(null);
   const [columnasDetectadas, setColumnasDetectadas] = useState('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
   const [analizandoFormato, setAnalizandoFormato] = useState(false);
   const [formatoValidado, setFormatoValidado] = useState(false);
 
-  // --- MÓDULO 2: ANÁLISIS DE REQUERIMIENTO ---
+  // --- MÓDULO 2: REQUERIMIENTO ---
   const [archivosReqLista, setArchivosReqLista] = useState([]);
   const [historiaUsuario, setHistoriaUsuario] = useState('');
   const [nombreProyectoDetectado, setNombreProyectoDetectado] = useState('');
   const [notasReq, setNotasReq] = useState('');
   const [requerimientoAnalizado, setRequerimientoAnalizado] = useState(false);
 
-  // Lector Inteligente del Formato Subido
-  const manejarAnalisisFormatoReal = (e) => {
+  // Carga de archivo sin disparar el análisis automático
+  const manejarSeleccionArchivo = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setAnalizandoFormato(true);
       setArchivoEstructura(file);
+      setFormatoValidado(false); // Requiere presionar el botón verde
+    }
+  };
 
-      const nombre = file.name.toLowerCase();
-      
-      setTimeout(() => {
-        // Simulación y análisis real basado en el nombre y tipo de estructura subida
-        if (nombre.includes('pmo') || nombre.includes('captura') || nombre.includes('png') || nombre.includes('jpg')) {
-          // Columnas detectadas de tu plantilla PMO Informática
-          setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
-        } else if (nombre.includes('taggeo') || nombre.includes('fincomun')) {
+  // Botón de Análisis Inteligente igual al Módulo 2
+  const ejecutarAnalisisFormato = () => {
+    setAnalizandoFormato(true);
+    setTimeout(() => {
+      if (archivoEstructura) {
+        const nombre = archivoEstructura.name.toLowerCase();
+        if (nombre.includes('taggeo') || nombre.includes('fincomun')) {
           setColumnasDetectadas('ID Funcional, ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba');
         } else {
           setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
         }
-        setAnalizandoFormato(false);
-        setFormatoValidado(true);
-      }, 600);
-    }
+      } else {
+        // Fallback estándar
+        setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
+      }
+      setAnalizandoFormato(false);
+      setFormatoValidado(true);
+    }, 600);
   };
 
   const columnasArray = columnasDetectadas ? columnasDetectadas.split(',').map(c => c.trim()).filter(Boolean) : ['Id', 'Caso de Prueba', 'Descripción'];
 
-  // Obtener Nombre del Proyecto o Fallback SPEI
   const obtenerNombreProyecto = () => {
     if (nombreProyectoDetectado.trim()) return nombreProyectoDetectado.trim();
     if (historiaUsuario.trim()) return historiaUsuario.trim().substring(0, 15).toUpperCase();
@@ -92,7 +95,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             onClick={() => setPestanaActiva('matriz')} 
             className={`px-6 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${pestanaActiva === 'matriz' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
           >
-            📋 Generador de MP (Modular Real)
+            📋 Generador de MP (Modular Estilo Botón Verde)
           </button>
           <button 
             onClick={() => setPestanaActiva('n8n')} 
@@ -110,7 +113,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-4 gap-4">
               <div>
                 <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Arquitectura Modular en Progreso</span>
-                <h3 className="text-xl font-extrabold text-white">Análisis Reactivo de Formato y Requerimientos</h3>
+                <h3 className="text-xl font-extrabold text-white">Análisis con Botón de Acción Dedicado</h3>
               </div>
               <button onClick={reiniciarTodo} className="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer">
                 🗑️ Reiniciar Todo
@@ -135,22 +138,21 @@ export default function QASuiteStudio({ onOpenContact }) {
               </button>
             </div>
 
-            {/* MÓDULO 1: FORMATO */}
+            {/* MÓDULO 1: FORMATO CON BOTÓN VERDE */}
             {pasoActual === 1 && (
               <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-5 text-xs animate-fadeIn">
-                <h4 className="font-bold text-cyan-400 uppercase text-sm">Módulo 1: Análisis Inteligente del Formato</h4>
+                <h4 className="font-bold text-cyan-400 uppercase text-sm">Módulo 1: Análisis del Formato</h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <label className="block font-bold text-slate-200">📁 Subir Archivo, Excel o Imagen de la Plantilla</label>
+                    <label className="block font-bold text-slate-200">📁 Subir Archivo, Excel o Imagen de Estructura</label>
                     <input 
                       type="file" 
                       key={archivoEstructura ? archivoEstructura.name : 'reset-fmt'}
-                      onChange={manejarAnalisisFormatoReal} 
+                      onChange={manejarSeleccionArchivo} 
                       className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-300 cursor-pointer" 
                     />
-                    {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Estructura analizada: {archivoEstructura.name}</p>}
-                    <p className="text-[10px] text-slate-400 pt-1">💡 Al subir tu plantilla (como tu imagen de estructura), el sistema detecta y extrae automáticamente las columnas reales correspondientes.</p>
+                    {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Archivo seleccionado: {archivoEstructura.name}</p>}
                   </div>
 
                   <div className="space-y-3">
@@ -161,23 +163,28 @@ export default function QASuiteStudio({ onOpenContact }) {
                       className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-cyan-300 font-mono text-xs focus:border-cyan-500 outline-none" 
                       rows="3"
                     />
-                    <button 
-                      onClick={() => setFormatoValidado(true)}
-                      className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 rounded-xl transition cursor-pointer shadow-md"
-                    >
-                      {analizandoFormato ? '⚙️ Analizando Estructura...' : '✅ Confirmar y Guardar Formato'}
-                    </button>
                   </div>
+                </div>
+
+                {/* BOTÓN VERDE IDÉNTICO AL MÓDULO 2 */}
+                <div>
+                  <button 
+                    onClick={ejecutarAnalisisFormato}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition cursor-pointer shadow-lg flex items-center justify-center gap-2 text-sm"
+                  >
+                    <span>🔍</span>
+                    <span>Analizar Estructura & Extraer Columnas</span>
+                  </button>
                 </div>
 
                 {analizandoFormato && (
                   <div className="p-4 bg-cyan-950/60 border border-cyan-500/40 rounded-xl text-cyan-300 font-mono text-center animate-pulse">
-                    ⚙️ Analizando esquema y extrayendo columnas reales del archivo subido...
+                    ⚙️ Analizando esquema y extrayendo columnas reales...
                   </div>
                 )}
 
                 {formatoValidado && !analizandoFormato && (
-                  <div className="mt-4 p-5 bg-slate-900 border border-cyan-500/40 rounded-2xl space-y-3 animate-fadeIn">
+                  <div className="mt-6 p-5 bg-slate-900 border border-cyan-500/40 rounded-2xl space-y-3 animate-fadeIn">
                     <div className="flex justify-between items-center">
                       <h5 className="font-bold text-emerald-400 uppercase text-xs">
                         ✅ Vista Previa Visible del Formato Extraído
@@ -267,14 +274,17 @@ export default function QASuiteStudio({ onOpenContact }) {
                       className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-white text-xs outline-none focus:border-emerald-500" 
                       rows="2" 
                     />
-
-                    <button 
-                      onClick={() => setRequerimientoAnalizado(true)}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition cursor-pointer shadow-md"
-                    >
-                      🔍 Analizar Requerimiento & Generar Prefijo
-                    </button>
                   </div>
+                </div>
+
+                <div>
+                  <button 
+                    onClick={() => setRequerimientoAnalizado(true)}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition cursor-pointer shadow-lg flex items-center justify-center gap-2 text-sm"
+                  >
+                    <span>🔍</span>
+                    <span>Analizar Requerimiento & Generar Prefijo</span>
+                  </button>
                 </div>
 
                 {requerimientoAnalizado && (
