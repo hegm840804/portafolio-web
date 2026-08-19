@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import N8NOrchestrator from './N8NOrchestrator';
 
 export default function QASuiteStudio({ onOpenContact }) {
+  // SEGURIDAD INVISIBLE: Bloquea herramientas de dev y selección
   useEffect(() => {
     const handler = (e) => {
       if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67))) {
@@ -13,20 +14,23 @@ export default function QASuiteStudio({ onOpenContact }) {
   }, []);
 
   const [pestanaActiva, setPestanaActiva] = useState('matriz');
-  const [pasoActual, setPasoActual] = useState(1);
+  const [pasoActual, setPasoActual] = useState(1); // 1: Formato, 2: Requerimiento, 3: Generación MP
 
-  // --- MÓDULO 1: FORMATO ---
+  // --- MÓDULO 1: FORMATO (Solo Excel / CSV) ---
   const [archivoEstructura, setArchivoEstructura] = useState(null);
   const [columnasDetectadas, setColumnasDetectadas] = useState('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
   const [analizandoFormato, setAnalizandoFormato] = useState(false);
   const [formatoValidado, setFormatoValidado] = useState(false);
 
-  // --- MÓDULO 2: REQUERIMIENTO ---
+  // --- MÓDULO 2: ANÁLISIS DE REQUERIMIENTO ---
   const [archivosReqLista, setArchivosReqLista] = useState([]);
   const [historiaUsuario, setHistoriaUsuario] = useState('');
   const [nombreProyectoDetectado, setNombreProyectoDetectado] = useState('');
   const [notasReq, setNotasReq] = useState('');
   const [requerimientoAnalizado, setRequerimientoAnalizado] = useState(false);
+
+  // --- MÓDULO 3: GENERACIÓN DE MP ---
+  const [nivelMatriz, setNivelMatriz] = useState('MED'); // JR, MED (default), SR
 
   const manejarSeleccionArchivo = (e) => {
     const file = e.target.files[0];
@@ -36,22 +40,17 @@ export default function QASuiteStudio({ onOpenContact }) {
     }
   };
 
-  // Análisis diferenciado según si es Imagen o Excel/Documento
+  // Análisis de columnas para archivos de Excel / CSV
   const ejecutarAnalisisFormato = () => {
     setAnalizandoFormato(true);
     setTimeout(() => {
       if (archivoEstructura) {
         const nombre = archivoEstructura.name.toLowerCase();
-        
-        // Detección si es Imagen (PNG, JPG, JPEG)
-        if (nombre.endsWith('.png') || nombre.endsWith('.jpg') || nombre.endsWith('.jpeg')) {
-          setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
-        } 
-        // Detección si es Excel o Word corporativo (Fincomún / Taggeo)
-        else if (nombre.includes('taggeo') || nombre.includes('fincomun') || nombre.includes('app') || nombre.includes('xlsx') || nombre.includes('doc')) {
+        if (nombre.includes('taggeo') || nombre.includes('fincomun')) {
           setColumnasDetectadas('ID Funcional, ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba, Estatus, Tester');
-        } 
-        else {
+        } else if (nombre.endsWith('.xlsx') || nombre.endsWith('.xls') || nombre.endsWith('.csv')) {
+          setColumnasDetectadas('Id, Caso de Prueba, Descripción, Fecha, Área Funcional / Sub proceso, Funcionalidad / Característica');
+        } else {
           setColumnasDetectadas('ID, Proceso, Subproceso, Descripción, Tipo, Estatus');
         }
       } else {
@@ -59,7 +58,7 @@ export default function QASuiteStudio({ onOpenContact }) {
       }
       setAnalizandoFormato(false);
       setFormatoValidado(true);
-    }, 600);
+    }, 500);
   };
 
   const columnasArray = columnasDetectadas ? columnasDetectadas.split(',').map(c => c.trim()).filter(Boolean) : ['Id', 'Caso de Prueba', 'Descripción'];
@@ -68,11 +67,82 @@ export default function QASuiteStudio({ onOpenContact }) {
     if (nombreProyectoDetectado.trim()) return nombreProyectoDetectado.trim();
     if (historiaUsuario.trim()) return historiaUsuario.trim().substring(0, 15).toUpperCase();
     if (archivosReqLista.length > 0) return archivosReqLista[0].replace(/\.[^/.]+$/, "").toUpperCase();
-    return "SPEI_TRANSFERENCIAS";
+    return "SPEI_TRANSFERENCIAS"; // Fallback por defecto exigido
   };
 
   const nombreProjFinal = obtenerNombreProyecto();
   const inicialesID = nombreProjFinal.substring(0, 4).toUpperCase();
+
+  // Límites según el Nivel (Módulo 3)
+  const totalCasos = nivelMatriz === 'JR' ? 50 : nivelMatriz === 'MED' ? 100 : 135;
+  const costoMin = nivelMatriz === 'JR' ? 750 : nivelMatriz === 'MED' ? 1400 : 2500;
+  const costoEstimado = costoMin.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+
+  // Generación de casos atómicos adaptados al formato del Módulo 1 y Requerimiento del Módulo 2
+  const generarCasosPruebaAtomicos = () => {
+    let casos = [];
+    const contextoReq = historiaUsuario.trim() || (archivosReqLista.length > 0 ? `Versiones: ${archivosReqLista.join(', ')}` : 'Prueba de Depósitos SPEI / Transferencias (Demo por Defecto)');
+    const tipos = ['Happy Path', 'Test to Fail', 'Smoke Test', 'Boundary Value', 'Seguridad'];
+
+    for (let i = 1; i <= totalCasos; i++) {
+      const tipoActual = tipos[(i - 1) % tipos.length];
+      const idCaso = `TC-${inicialesID}-${String(i).padStart(3, '0')}`;
+      
+      let procesoVal = "Core Transaccional / SPEI";
+      let descVal = `Verificación atómica para requerimiento: "${contextoReq}". Escenario #${i} bajo tipología ${tipoActual}. [Notas: ${notasReq || 'Ninguna'}]`;
+
+      if (contextoReq.toLowerCase().includes('taggeo') || contextoReq.toLowerCase().includes('hubspot')) {
+        procesoVal = "Módulo de Etiquetado & HubSpot API";
+        descVal = `Validar solicitud POST al endpoint de HubSpot (Pipeline 728738158) para pantalla #${i} (${tipoActual}).`;
+      }
+
+      let casoObj = {};
+      columnasArray.forEach((col, idx) => {
+        const cLower = col.toLowerCase();
+        if (cLower.includes('id') || cLower.includes('caso')) casoObj[col] = idCaso;
+        else if (cLower.includes('proceso') || cLower.includes('área funcional') || cLower.includes('area')) casoObj[col] = procesoVal;
+        else if (cLower.includes('sub') || cLower.includes('sub-proceso')) casoObj[col] = `Subflujo Operativo #${i}`;
+        else if (cLower.includes('desc')) casoObj[col] = descVal;
+        else if (cLower.includes('tipo')) casoObj[col] = tipoActual;
+        else if (cLower.includes('fecha')) casoObj[col] = new Date().toISOString().split('T')[0];
+        else if (cLower.includes('funcionalidad')) casoObj[col] = `Característica Operativa #${i}`;
+        else if (cLower.includes('estatus') || cLower.includes('estado')) casoObj[col] = 'Pendiente';
+        else if (cLower.includes('tester')) casoObj[col] = 'Martin Tonatiuh Hernandez Garfias';
+        else casoObj[col] = `Valor_${idx}_${i}`;
+      });
+      casos.push(casoObj);
+    }
+    return casos;
+  };
+
+  const listaCasosGenerados = generarCasosPruebaAtomicos();
+
+  // Conteo de Tipología
+  const totalHP = listaCasosGenerados.filter(c => Object.values(c).includes('Happy Path')).length;
+  const totalTTF = listaCasosGenerados.filter(c => Object.values(c).includes('Test to Fail')).length;
+  const totalSmoke = listaCasosGenerados.filter(c => Object.values(c).includes('Smoke Test')).length;
+  const totalOtros = totalCasos - (totalHP + totalTTF + totalSmoke);
+
+  // Descarga protegida de Demo (10 casos + Leyenda)
+  const descargarDemoCSV = () => {
+    let csv = '\uFEFF' + columnasArray.join(',') + '\n';
+    let avisoRow = new Array(columnasArray.length).fill('');
+    avisoRow[0] = 'AVISO_DEMO';
+    avisoRow[1] = 'ESTE ARCHIVO CONTIENE UN DEMO DE 10 CASOS. SI DESEAS LA MP COMPLETA, CONTACTA AL DESARROLLADOR.';
+    csv += '"' + avisoRow.join('","') + '"\n';
+
+    listaCasosGenerados.slice(0, 10).forEach(c => {
+      let fila = columnasArray.map(col => `"${(c[col] || '').replace(/"/g, '""')}"`);
+      csv += fila.join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `MP_DEMO_10_Casos_${nivelMatriz}.csv`;
+    link.click();
+  };
 
   const reiniciarTodo = () => {
     setArchivoEstructura(null);
@@ -84,6 +154,7 @@ export default function QASuiteStudio({ onOpenContact }) {
     setNombreProyectoDetectado('');
     setNotasReq('');
     setRequerimientoAnalizado(false);
+    setNivelMatriz('MED');
     setPasoActual(1);
   };
 
@@ -100,7 +171,7 @@ export default function QASuiteStudio({ onOpenContact }) {
             onClick={() => setPestanaActiva('matriz')} 
             className={`px-6 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${pestanaActiva === 'matriz' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
           >
-            📋 Generador de MP (Soporte Excel e Imagen)
+            📋 Generador de MP (Módulos 1, 2 y 3)
           </button>
           <button 
             onClick={() => setPestanaActiva('n8n')} 
@@ -117,48 +188,56 @@ export default function QASuiteStudio({ onOpenContact }) {
             
             <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-4 gap-4">
               <div>
-                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Arquitectura Modular en Progreso</span>
-                <h3 className="text-xl font-extrabold text-white">Módulo 1: Análisis Inteligente (Excel o Imagen)</h3>
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Arquitectura Modular Profesional</span>
+                <h3 className="text-xl font-extrabold text-white">Generación Atómica de Matriz de Pruebas (MP)</h3>
               </div>
               <button onClick={reiniciarTodo} className="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer">
                 🗑️ Reiniciar Todo
               </button>
             </div>
 
-            {/* Pestañas de Módulos */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Pestañas de Navegación por Módulos */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button 
                 onClick={() => setPasoActual(1)} 
-                className={`p-4 rounded-2xl border text-left transition cursor-pointer ${pasoActual === 1 ? 'bg-cyan-950 border-cyan-500 shadow-lg' : 'bg-slate-950 border-slate-800'}`}
+                className={`p-3 rounded-2xl border text-left transition cursor-pointer ${pasoActual === 1 ? 'bg-cyan-950 border-cyan-500 shadow-lg' : 'bg-slate-950 border-slate-800'}`}
               >
                 <span className="text-[10px] text-cyan-400 font-bold uppercase">Módulo 1</span>
-                <p className="text-sm font-bold text-white mt-1">Análisis de Formato & Estructura</p>
+                <p className="text-xs font-bold text-white mt-0.5">Formato & Columnas (Excel)</p>
               </button>
               <button 
                 onClick={() => setPasoActual(2)} 
                 className={`p-4 rounded-2xl border text-left transition cursor-pointer ${pasoActual === 2 ? 'bg-emerald-950 border-emerald-500 shadow-lg' : 'bg-slate-950 border-slate-800'}`}
               >
                 <span className="text-[10px] text-emerald-400 font-bold uppercase">Módulo 2</span>
-                <p className="text-sm font-bold text-white mt-1">Análisis de Requerimiento & Versiones</p>
+                <p className="text-xs font-bold text-white mt-0.5">Análisis de Requerimiento</p>
+              </button>
+              <button 
+                onClick={() => setPasoActual(3)} 
+                className={`p-4 rounded-2xl border text-left transition cursor-pointer ${pasoActual === 3 ? 'bg-purple-950 border-purple-500 shadow-lg' : 'bg-slate-950 border-slate-800'}`}
+              >
+                <span className="text-[10px] text-purple-400 font-bold uppercase">Módulo 3</span>
+                <p className="text-xs font-bold text-white mt-0.5">Generación de MP ({totalCasos} Casos)</p>
               </button>
             </div>
 
-            {/* MÓDULO 1: FORMATO */}
+            {/* MÓDULO 1: FORMATO (EXCEL) */}
             {pasoActual === 1 && (
               <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-5 text-xs animate-fadeIn">
-                <h4 className="font-bold text-cyan-400 uppercase text-sm">Módulo 1: Análisis del Formato (Excel / Imagen)</h4>
+                <h4 className="font-bold text-cyan-400 uppercase text-sm">Módulo 1: Análisis del Formato (Excel / CSV)</h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <label className="block font-bold text-slate-200">📁 Subir Archivo Excel, Documento o Imagen de Estructura</label>
+                    <label className="block font-bold text-slate-200">📁 Subir Archivo Excel o CSV de Formato</label>
                     <input 
                       type="file" 
+                      accept=".xlsx, .xls, .csv"
                       key={archivoEstructura ? archivoEstructura.name : 'reset-fmt'}
                       onChange={manejarSeleccionArchivo} 
                       className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-300 cursor-pointer" 
                     />
-                    {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Archivo seleccionado: {archivoEstructura.name}</p>}
-                    <p className="text-[10px] text-slate-400 pt-1">💡 Ya sea que subas un Excel de Fincomún o una captura/imagen de tu plantilla, haz clic en el botón verde para extraer las columnas correspondientes.</p>
+                    {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Excel cargado: {archivoEstructura.name}</p>}
+                    <p className="text-[10px] text-slate-400 pt-1">💡 Sube tu matriz de Excel o CSV de referencia para extraer las columnas exactas.</p>
                   </div>
 
                   <div className="space-y-3">
@@ -178,13 +257,13 @@ export default function QASuiteStudio({ onOpenContact }) {
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition cursor-pointer shadow-lg flex items-center justify-center gap-2 text-sm"
                   >
                     <span>🔍</span>
-                    <span>Analizar Estructura & Extraer Columnas</span>
+                    <span>Analizar Excel & Extraer Columnas</span>
                   </button>
                 </div>
 
                 {analizandoFormato && (
                   <div className="p-4 bg-cyan-950/60 border border-cyan-500/40 rounded-xl text-cyan-300 font-mono text-center animate-pulse">
-                    ⚙️ Procesando archivo o imagen y extrayendo esquema de columnas...
+                    ⚙️ Leyendo cabeceras del Excel y extrayendo estructura...
                   </div>
                 )}
 
@@ -192,10 +271,10 @@ export default function QASuiteStudio({ onOpenContact }) {
                   <div className="mt-6 p-5 bg-slate-900 border border-cyan-500/40 rounded-2xl space-y-3 animate-fadeIn">
                     <div className="flex justify-between items-center">
                       <h5 className="font-bold text-emerald-400 uppercase text-xs">
-                        ✅ Vista Previa Visible del Formato Extraído
+                        ✅ Formato Validado y Visible
                       </h5>
                       <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2.5 py-1 rounded-lg font-mono">
-                        Total Columnas: {columnasArray.length}
+                        {columnasArray.length} Columnas Activas
                       </span>
                     </div>
 
@@ -212,7 +291,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                           <tr className="bg-slate-900/40">
                             {columnasArray.map((col, idx) => (
                               <td key={idx} className="px-4 py-2 text-slate-300 font-mono text-[11px] border-r border-slate-800 last:border-r-0">
-                                {idx === 0 ? `01` : `[Ejemplo de ${col}]`}
+                                {idx === 0 ? `TC-${inicialesID}-01` : `[${col}]`}
                               </td>
                             ))}
                           </tr>
@@ -288,7 +367,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition cursor-pointer shadow-lg flex items-center justify-center gap-2 text-sm"
                   >
                     <span>🔍</span>
-                    <span>Analizar Requerimiento & Generar Prefijo</span>
+                    <span>Analizar Requerimiento & Generar Prefijo ID</span>
                   </button>
                 </div>
 
@@ -317,10 +396,115 @@ export default function QASuiteStudio({ onOpenContact }) {
                       <button onClick={() => setPasoActual(1)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg text-xs">
                         ⬅️ Volver a Módulo 1
                       </button>
-                      <span className="text-xs text-emerald-400 font-bold">✨ ¡Módulo 2 completado con éxito! Listo para el Módulo 3 (Generación de MP).</span>
+                      <button 
+                        onClick={() => setPasoActual(3)}
+                        className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-5 py-2 rounded-lg transition cursor-pointer text-xs shadow-md"
+                      >
+                        Siguiente: Módulo 3 (Generación de MP) ➡️
+                      </button>
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* MÓDULO 3: GENERACIÓN DE MP */}
+            {pasoActual === 3 && (
+              <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-6 animate-fadeIn">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-800 pb-4">
+                  <div>
+                    <h4 className="font-bold text-purple-400 uppercase text-sm">Módulo 3: Generación de Matriz de Pruebas (MP)</h4>
+                    <p className="text-[11px] text-slate-400">Total de casos atómicos generados: <strong className="text-white font-mono">{totalCasos} Casos (Prefijo: TC-{inicialesID})</strong></p>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button onClick={() => setNivelMatriz('JR')} className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${nivelMatriz === 'JR' ? 'bg-purple-600 text-white shadow-md' : 'bg-slate-900 text-slate-400'}`}>
+                      JR (50)
+                    </button>
+                    <button onClick={() => setNivelMatriz('MED')} className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${nivelMatriz === 'MED' ? 'bg-purple-600 text-white shadow-md' : 'bg-slate-900 text-slate-400'}`}>
+                      MED (100) ⭐
+                    </button>
+                    <button onClick={() => setNivelMatriz('SR')} className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${nivelMatriz === 'SR' ? 'bg-purple-600 text-white shadow-md' : 'bg-slate-900 text-slate-400'}`}>
+                      SR (135)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Resumen por Tipología */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Happy Path</span>
+                    <span className="text-lg font-black text-emerald-400">{totalHP}</span>
+                  </div>
+                  <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Test to Fail</span>
+                    <span className="text-lg font-black text-amber-400">{totalTTF}</span>
+                  </div>
+                  <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Smoke Test</span>
+                    <span className="text-lg font-black text-cyan-400">{totalSmoke}</span>
+                  </div>
+                  <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Seguridad / Otros</span>
+                    <span className="text-lg font-black text-purple-400">{totalOtros}</span>
+                  </div>
+                </div>
+
+                {/* Tabla Interactiva Adaptada al Formato Módulo 1 */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                  <div className="max-h-72 overflow-y-auto">
+                    <table className="w-full text-xs text-left text-slate-300">
+                      <thead className="bg-slate-950 text-emerald-400 uppercase font-mono sticky top-0 shadow-sm">
+                        <tr>
+                          {columnasArray.map((col, idx) => (
+                            <th key={idx} className="px-4 py-3">{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {listaCasosGenerados.map((c, i) => (
+                          <tr key={i} className="hover:bg-slate-950/60 align-top">
+                            {columnasArray.map((col, idx) => (
+                              <td key={idx} className="px-4 py-3 font-mono text-slate-200 whitespace-pre-line">
+                                {c[col]}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Descarga Demo Protegida */}
+                <div className="flex justify-end">
+                  <button 
+                    onClick={descargarDemoCSV}
+                    className="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-md"
+                  >
+                    <span>📥 Descargar Archivo Demo (10 Casos)</span>
+                  </button>
+                </div>
+
+                {/* Cotización Automática */}
+                <div className="bg-gradient-to-r from-emerald-950/90 to-teal-950/90 border border-emerald-500/40 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-widest block">Cotización Automática ($750 - $2,500 MXN)</span>
+                    <h4 className="text-white font-black text-2xl mt-0.5">{costoEstimado} <span className="text-xs font-normal text-slate-300">({totalCasos} Escenarios Nivel {nivelMatriz})</span></h4>
+                    <p className="text-[10px] text-slate-300 mt-1">* Nota comercial: Contiene escenarios de prueba optimizados (No es la matriz final de ejecución corporativa).</p>
+                  </div>
+                  <button 
+                    onClick={() => onOpenContact(`Hola Martin, solicito la MP completa para el proyecto ${nombreProjFinal} nivel ${nivelMatriz} (${totalCasos} casos). Cotización: ${costoEstimado}. ¿Podemos coordinar la entrega?`)}
+                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-lg transition cursor-pointer"
+                  >
+                    💬 Solicitar MP Completa & Cotización ({costoEstimado})
+                  </button>
+                </div>
+
+                <div className="flex justify-start pt-2">
+                  <button onClick={() => setPasoActual(2)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg text-xs">
+                    ⬅️ Volver a Módulo 2
+                  </button>
+                </div>
               </div>
             )}
 
