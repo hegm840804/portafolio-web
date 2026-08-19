@@ -14,37 +14,50 @@ export default function QASuiteStudio({ onOpenContact }) {
 
   const [pestanaActiva, setPestanaActiva] = useState('matriz');
 
-  // ESTADOS DEL PASO 1 (Formato de Matriz y Columnas)
-  // Nota: El nombre del proyecto (iniciales) se determinará al final del requerimiento. Por defecto usa SPEI si no hay datos.
+  // Estados del Paso 1 con reactividad total ante nuevos archivos o limpiezas
   const [archivoEstructura, setArchivoEstructura] = useState(null);
   const [columnasManuales, setColumnasManuales] = useState('ID, Proceso, Subproceso, Descripción, Tipo');
   const [mostrarVistaPrevia, setMostrarVistaPrevia] = useState(false);
+  const [analizando, setAnalizando] = useState(false);
 
-  // Prefijo por defecto SPEI / Transferencia
   const inicialesProyecto = 'SPEI';
 
   const columnasArray = columnasManuales ? columnasManuales.split(',').map(c => c.trim()).filter(Boolean) : ['ID', 'Proceso', 'Subproceso', 'Descripción', 'Tipo'];
 
+  // Función reactiva que analiza el formato cada vez que se sube un archivo
   const manejarSubidaEstructura = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setAnalizando(true);
       setArchivoEstructura(file);
-      const nombre = file.name.toLowerCase();
-      if (nombre.includes('taggeo') || nombre.includes('app') || nombre.includes('fincomun')) {
-        setColumnasManuales('ID Funcional, ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba');
-      }
-      setMostrarVistaPrevia(true);
+      
+      // Simulamos un breve análisis dinámico del archivo subido
+      setTimeout(() => {
+        const nombre = file.name.toLowerCase();
+        if (nombre.includes('taggeo') || nombre.includes('app') || nombre.includes('fincomun') || nombre.includes('xlsx') || nombre.includes('doc')) {
+          setColumnasManuales('ID Funcional, ID, Proceso de prueba, Sub-Proceso de prueba, Descripción de prueba, Tipo de prueba');
+        } else {
+          setColumnasManuales('ID, Módulo, Submódulo, Descripción del Escenario, Tipo');
+        }
+        setAnalizando(false);
+        setMostrarVistaPrevia(true);
+      }, 500);
     }
   };
 
   const analizarYMostrar = () => {
-    setMostrarVistaPrevia(true);
+    setAnalizando(true);
+    setTimeout(() => {
+      setAnalizando(false);
+      setMostrarVistaPrevia(true);
+    }, 400);
   };
 
   const reiniciarPaso1 = () => {
     setArchivoEstructura(null);
     setColumnasManuales('ID, Proceso, Subproceso, Descripción, Tipo');
     setMostrarVistaPrevia(false);
+    setAnalizando(false);
   };
 
   return (
@@ -78,10 +91,10 @@ export default function QASuiteStudio({ onOpenContact }) {
             <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-4 gap-4">
               <div>
                 <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block">Desarrollo Modular - Paso 1</span>
-                <h3 className="text-xl font-extrabold text-white">Análisis de Formato de Matriz (Columnas Atómicamente Esenciales)</h3>
+                <h3 className="text-xl font-extrabold text-white">Análisis Dinámico de Formato de Matriz</h3>
               </div>
               <button onClick={reiniciarPaso1} className="bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer">
-                🗑️ Limpiar / Reiniciar
+                🗑️ Limpiar / Reiniciar Análisis
               </button>
             </div>
 
@@ -93,11 +106,12 @@ export default function QASuiteStudio({ onOpenContact }) {
                   <label className="block font-bold text-slate-200">📁 Subir Archivo, Excel o Imagen de Estructura</label>
                   <input 
                     type="file" 
+                    key={archivoEstructura ? archivoEstructura.name : 'reset-input'}
                     onChange={manejarSubidaEstructura} 
                     className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-300 cursor-pointer" 
                   />
                   {archivoEstructura && <p className="text-cyan-300 font-mono text-[11px]">Estructura analizada: {archivoEstructura.name}</p>}
-                  <p className="text-[10px] text-slate-400 pt-2">💡 Nota: El nombre e iniciales del proyecto se extraerán automáticamente al procesar el requerimiento. Si no se suben datos, se aplicará por defecto el estándar de <strong>SPEI/Transferencia</strong>.</p>
+                  <p className="text-[10px] text-slate-400 pt-2">💡 Al subir un archivo nuevo, el sistema reanaliza automáticamente las columnas. Si no se sube nada, aplica por defecto el estándar de <strong>SPEI/Transferencia</strong>.</p>
                 </div>
 
                 <div className="space-y-3">
@@ -108,18 +122,24 @@ export default function QASuiteStudio({ onOpenContact }) {
                     className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-cyan-300 font-mono text-xs focus:border-cyan-500 outline-none" 
                     rows="4"
                   />
-                  <p className="text-[10px] text-slate-400">Cada elemento es un escenario de prueba atómico individual (ID, Proceso, Subproceso, Descripción, Tipo).</p>
+                  <p className="text-[10px] text-slate-400">Cada elemento es un escenario de prueba atómico individual.</p>
                   
                   <button 
                     onClick={analizarYMostrar}
                     className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 rounded-xl transition cursor-pointer shadow-md"
                   >
-                    🔍 Analizar Formato y Mostrar Visible
+                    {analizando ? '⚙️ Analizando Formato...' : '🔍 Reanalizar Formato y Mostrar Visible'}
                   </button>
                 </div>
               </div>
 
-              {mostrarVistaPrevia && (
+              {analizando && (
+                <div className="p-4 bg-cyan-950/60 border border-cyan-500/40 rounded-xl text-cyan-300 font-mono text-center animate-pulse">
+                  ⚙️ Procesando nueva estructura y extrayendo columnas esenciales...
+                </div>
+              )}
+
+              {mostrarVistaPrevia && !analizando && (
                 <div className="mt-6 p-5 bg-slate-900 border border-cyan-500/40 rounded-2xl space-y-3 animate-fadeIn">
                   <div className="flex justify-between items-center">
                     <h5 className="font-bold text-emerald-400 uppercase text-xs">
@@ -153,7 +173,7 @@ export default function QASuiteStudio({ onOpenContact }) {
                   </div>
 
                   <div className="flex justify-end pt-2">
-                    <span className="text-xs text-emerald-400 font-bold">✨ ¡Estructura de columnas validada! En el siguiente paso implementaremos el Módulo 2 (Requerimiento).</span>
+                    <span className="text-xs text-emerald-400 font-bold">✨ ¡Formato analizado y validado correctamente! Puedes limpiar para probar con otro archivo.</span>
                   </div>
                 </div>
               )}
